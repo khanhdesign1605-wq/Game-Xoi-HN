@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quán Xôi Hà Nội</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Be+Vietnam+Pro:wght@400;600;800&display=swap">
+<style>
+/* Layout: full-screen shop split into three zones on every screen size.
+   HUD on top; the order counter (left) and pickup counter with tables (right) share the top two thirds;
+   the kitchen runs along the bottom third. On wide screens the kitchen splits into tickets+pot | controls.
+   Look: purple signboards with yellow letters, yellow wall, sidewalk tiles, terracotta breeze-block counters.
+   Deliberately single-theme: the shop always looks like the shop. */
+:root {
+  --sign: #3a2541;
+  --sign-deep: #24162a;
+  --gold: #f6c21a;
+  --wall: #f7cd2c;
+  --wall-shade: #e9b70e;
+  --brick: #d9603b;
+  --brick-dark: #a8401f;
+  --street: #1f3f9a;
+  --tile: #8e9298;
+  --tile-line: #74787e;
+  --counter: #fff6df;
+  --gac: #d63b2c;
+  --gac-dark: #9e2219;
+  --ink: #2a1d10;
+  --ink-soft: #5d4a33;
+  --good: #2f8a2a;
+  --bad: #c2321f;
+  --font-sign: "Baloo 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--wall); color: var(--ink); font-family: var(--font-body); font-size: 14px;
+  overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+button { font-family: var(--font-sign); cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
+
+#app {
+  height: 100%; display: grid; gap: 8px;
+  padding-inline: max(8px, env(safe-area-inset-left, 0px)) max(8px, env(safe-area-inset-right, 0px));
+  padding-block: calc(6px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-bottom, 0px));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 2fr) auto minmax(0, 1fr);
+  grid-template-areas: "hud hud" "road road" "order pickup" "boxes boxes" "kitchen kitchen";
+}
+@media (min-width: 900px) { #app { padding-inline: 14px; gap: 10px; } }
+
+/* HUD */
+.hud {
+  grid-area: hud; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--sign); border-radius: 10px; padding: 5px 10px; box-shadow: 0 4px 0 var(--sign-deep);
+}
+.brand { margin: 0; font-family: var(--font-sign); font-weight: 800; text-transform: uppercase; color: var(--gold); font-size: clamp(1.05rem, 4.6vw, 1.7rem); line-height: 1; white-space: nowrap; }
+.street {
+  background: var(--street); color: #fff; border: 2px solid #fff; border-radius: 4px; padding: 0 6px 1px;
+  font-family: var(--font-sign); font-weight: 800; font-size: .72rem; line-height: 1.1; text-align: center; white-space: nowrap;
+}
+.street small { display: block; font-size: .5rem; letter-spacing: .08em; }
+.hud .grow { flex: 1; }
+.chip { font-family: var(--font-sign); font-weight: 800; font-size: .9rem; color: var(--gold); border: 2px solid var(--gold); border-radius: 999px; padding: 0 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip.money { background: var(--gold); color: var(--sign); }
+.iconbtn { border: 2px solid var(--gold); background: transparent; color: var(--gold); border-radius: 999px; height: 28px; padding: 0 9px; font-weight: 800; font-size: .85rem; }
+@media (max-width: 520px) { .street, #fsBtn { display: none; } .order .sub { display: none; } }
+
+/* Zones */
+.zone { position: relative; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; min-width: 0; box-shadow: 0 4px 0 rgba(58,37,65,.25); }
+.zone-head {
+  background: var(--sign); color: var(--gold); font-family: var(--font-sign); font-weight: 800; text-transform: uppercase;
+  font-size: .88rem; letter-spacing: .03em; padding: 3px 10px; display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.zone-head .num { background: var(--gold); color: var(--sign); width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; flex: none; }
+.zone-head .sub { margin-left: auto; text-transform: none; color: #fff; font-weight: 700; font-size: .78rem; opacity: .85; overflow: hidden; text-overflow: ellipsis; }
+.order { grid-area: order; }
+.pickup { grid-area: pickup; }
+.kitchen { grid-area: kitchen; background: var(--counter); border: 3px solid var(--brick-dark); }
+.ground {
+  position: relative; flex: 1; min-height: 0; container-type: size;
+  background:
+    linear-gradient(180deg, var(--wall) 0 44%, transparent 44%),
+    linear-gradient(90deg, var(--tile-line) 2px, transparent 2px) 0 0 / 30px 30px,
+    linear-gradient(0deg, var(--tile-line) 2px, transparent 2px) 0 0 / 30px 30px,
+    var(--tile);
+}
+/* Street stall: worn ochre wall with tangled power lines, a canvas awning over the order counter,
+   an alley (ngõ) behind the pickup counter with folding chairs, and the road running past. */
+.ground::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 44%; pointer-events: none;
+  background:
+    radial-gradient(ellipse 30% 40% at 18% 35%, rgba(120,80,20,.16), transparent 70%),
+    radial-gradient(ellipse 25% 30% at 80% 75%, rgba(120,80,20,.14), transparent 70%),
+    linear-gradient(180deg, transparent 75%, rgba(0,0,0,.14));
+}
+.wires { position: absolute; left: 0; top: 2%; width: 100%; height: 16%; z-index: 1; pointer-events: none; }
+.wires path { fill: none; stroke: #2a2a2a; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.awning {
+  position: absolute; left: 0; right: 0; top: 8%; height: 11%; z-index: 1;
+  background: repeating-linear-gradient(90deg, #1f5fa8 0 26px, #eef1f4 26px 52px);
+  box-shadow: 0 6px 8px rgba(0,0,0,.15);
+}
+.awning::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 9px; background: radial-gradient(circle at 13px 0, #1f5fa8 0 9px, transparent 9.5px) 0 0 / 52px 9px, radial-gradient(circle at 39px 0, #eef1f4 0 9px, transparent 9.5px) 0 0 / 52px 9px; }
+.pickup .ground {
+  background:
+    linear-gradient(180deg, var(--wall) 0 44%, transparent 44%),
+    linear-gradient(172deg, transparent 62%, rgba(0,0,0,.08) 62% 62.4%, transparent 62.4%),
+    linear-gradient(8deg, transparent 80%, rgba(0,0,0,.07) 80% 80.4%, transparent 80.4%),
+    #aaa49a;
+}
+.alley { position: absolute; left: 28%; right: 28%; top: 0; height: 44%; background: linear-gradient(180deg, #3d3128, #2a221b 65%, #77706a); clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%); }
+.alley::before { content: ""; position: absolute; left: 46%; top: 20%; width: 8%; aspect-ratio: 1; border-radius: 50%; background: #ffd866; box-shadow: 0 0 14px 6px rgba(255,216,102,.45); }
+.ngo { position: absolute; left: calc(28% - 46px); top: 14%; background: var(--street); color: #fff; border: 2px solid #fff; border-radius: 3px; font-family: var(--font-sign); font-weight: 800; font-size: .62rem; padding: 0 5px; z-index: 1; }
+.chair { position: absolute; bottom: 1cqh; width: min(11cqw, 62px); height: min(9cqh, 52px); transform: translateX(-50%); z-index: 4; }
+.chair svg { width: 100%; height: 100%; display: block; overflow: visible; }
+
+/* Road */
+.road {
+  grid-area: road; position: relative; height: 70px; overflow: hidden; border-radius: 8px;
+  background: linear-gradient(180deg, #c9c2b3 0 5px, #45474c 5px), #45474c;
+}
+.road::before { content: ""; position: absolute; left: 0; right: 0; top: 55%; height: 3px; background: repeating-linear-gradient(90deg, #f2f2f2 0 22px, transparent 22px 46px); opacity: .8; }
+.veh { position: absolute; left: 0; height: 74%; bottom: 2px; z-index: 2; }
+.veh.far { bottom: 42%; height: 52%; z-index: 1; filter: brightness(.88); }
+.veh svg { height: 100%; width: auto; display: block; overflow: visible; }
+@media (max-width: 899px) { .road { height: 42px; } .ngo { display: none; } }
+
+/* Xôi display line between the counters and the kitchen: four tubs of the day's xôi,
+   then the finished boxes sliding from the kitchen to the pickup counter. */
+.boxline {
+  grid-area: boxes; display: flex; align-items: stretch; gap: 8px; height: 62px;
+  background: linear-gradient(180deg, #fff6df 0 6px, var(--brick) 6px); border: 3px solid var(--brick-dark); border-radius: 10px; padding: 4px 8px 4px; position: relative;
+}
+.tubs { display: flex; gap: 6px; align-items: flex-end; flex: none; }
+.tub { width: 54px; display: flex; flex-direction: column; align-items: center; gap: 1px; color: #fff; font-family: var(--font-sign); font-weight: 800; font-size: .62rem; line-height: 1; white-space: nowrap; }
+.tub i { display: block; width: 100%; height: 26px; border-radius: 6px 6px 14px 14px; background: linear-gradient(180deg, #eef2f3, #a9b4b8); position: relative; }
+.tub i::before { content: ""; position: absolute; left: 4px; right: 4px; top: -5px; height: 12px; border-radius: 50%; background: radial-gradient(ellipse at 40% 40%, rgba(255,255,255,.45), transparent 60%), var(--c); box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); }
+.tub i::after { content: ""; position: absolute; left: 50%; top: -18px; width: 10px; height: 14px; margin-left: -5px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,255,255,.75), transparent); opacity: 0; animation: tubsteam 2.4s linear infinite; animation-delay: var(--d, 0s); }
+@keyframes tubsteam { 30% { opacity: .85; } 100% { transform: translateY(-10px) scale(1.3); opacity: 0; } }
+.box-track { flex: 1; min-width: 0; position: relative; border-left: 2px dashed rgba(255,246,223,.6); }
+.box-track .label { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); color: rgba(255,246,223,.85); font-family: var(--font-sign); font-weight: 800; font-size: .78rem; white-space: nowrap; }
+.hop { position: absolute; left: 0; bottom: 4px; width: 46px; height: 34px; z-index: 2; }
+.hop .lid { position: absolute; left: -2px; right: -2px; top: 0; height: 9px; border-radius: 4px; background: #fdfdfd; box-shadow: inset 0 -2px 0 #d9d9d9; }
+.hop .body { position: absolute; left: 0; right: 0; top: 8px; bottom: 0; border-radius: 2px 2px 6px 6px; background: #fff; box-shadow: inset 0 -3px 0 #ddd; overflow: hidden; }
+.hop .body::before { content: ""; position: absolute; left: 4px; right: 4px; top: 0; height: 6px; background: #3f8a3a; border-radius: 0 0 4px 4px; }
+.hop .no { position: absolute; left: 0; right: 0; top: 14px; text-align: center; font-family: var(--font-sign); font-weight: 800; font-size: .72rem; color: var(--gac-dark); }
+.hop.dish .lid { display: none; }
+.hop.dish .body { top: 18px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px #ddd; }
+.hop.dish .body::before { left: 25%; right: 25%; top: 25%; height: 50%; border-radius: 50%; background: var(--pc, #f2bf36); }
+.hop.dish .no { top: 0; }
+@media (max-width: 899px) {
+  .boxline { height: 50px; gap: 6px; padding: 3px 6px; }
+  .tub { width: 40px; font-size: .55rem; }
+  .tub i { height: 18px; }
+  .box-track .label { font-size: .68rem; white-space: normal; line-height: 1.1; }
+  .hop { transform-origin: bottom left; scale: .85; }
+}
+.menu-board { position: absolute; top: 6%; right: 5%; width: min(46%, 150px); max-height: 38%; background: #fff; border: 2px solid var(--sign); border-radius: 4px; padding: 3px 5px; font-size: .58rem; line-height: 1.2; overflow: hidden; font-weight: 600; }
+.menu-board b { display: block; font-family: var(--font-sign); color: var(--gac-dark); font-size: .7rem; }
+.order-counter {
+  position: absolute; right: 0; bottom: 0; width: min(30%, 150px); height: min(36cqh, 105px); border-radius: 8px 0 0 0;
+  background:
+    radial-gradient(circle at 50% 50%, var(--brick-dark) 0 4px, transparent 4.5px) 0 0 / 20px 20px,
+    linear-gradient(45deg, transparent 45%, var(--brick-dark) 45% 55%, transparent 55%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, transparent 45%, var(--brick-dark) 45% 55%, transparent 55%) 0 0 / 20px 20px,
+    var(--brick);
+  border-top: 6px solid var(--counter); z-index: 3;
+}
+.shelf {
+  position: absolute; left: 4%; right: 4%; top: calc(44% - min(14cqh, 44px)); height: min(14cqh, 44px); z-index: 1;
+  background: var(--brick); border-top: 5px solid var(--counter); border-radius: 4px;
+  display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; justify-items: center;
+}
+.packet { width: 30px; height: 16px; margin-top: -22px; border-radius: 6px 6px 4px 4px; background: #3f8a3a; position: relative; box-shadow: inset 0 -4px 0 #2d6a29; animation: drop .35s ease-out both; }
+.packet::after { content: ""; position: absolute; left: 45%; top: -3px; width: 3px; height: 22px; background: #c9a85e; transform: rotate(90deg); }
+@keyframes drop { from { transform: translateY(-14px); opacity: 0; } }
+.zone-foot { padding: 6px; background: var(--sign); display: flex; gap: 6px; }
+
+/* Walkers */
+.walker {
+  position: absolute; bottom: 4px; height: min(108px, 62%); height: min(62cqh, 210px); aspect-ratio: 60 / 112; z-index: 2;
+  transition: left .9s linear; transform: translateX(-50%);
+}
+.order .walker { height: min(108px, 62%); height: min(56cqh, 210px); }
+.pickup .walker { bottom: auto; top: 45%; height: min(28cqh, 58cqw, 150px); transition: left .9s linear, top .9s linear, height .9s linear; }
+.pickup .walker.seated { --sh: min(26cqh, 46cqw, 140px); height: var(--sh); top: calc(100cqh - 7cqh - min(9cqh, 46px) * .5 - var(--sh) * .66); }
+.ptable { position: absolute; bottom: 7cqh; width: min(30cqw, 170px); height: min(9cqh, 46px); transform: translateX(-50%); z-index: 3; }
+.ptable::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 55%; border-radius: 50%; background: radial-gradient(ellipse at 45% 40%, #ffe066, var(--gold) 60%, #d9a400 100%); box-shadow: 0 3px 0 #c99500; }
+.ptable::after { content: ""; position: absolute; left: 30%; right: 30%; top: 45%; bottom: -6cqh; background: linear-gradient(60deg, transparent 45%, var(--gold) 45% 55%, transparent 55%), linear-gradient(-60deg, transparent 45%, var(--gold) 45% 55%, transparent 55%); }
+.ptable .plate { position: absolute; top: 2%; width: 30%; height: 34%; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px #ddd; z-index: 1; }
+.ptable .plate::after { content: ""; position: absolute; inset: 25%; border-radius: 50%; background: var(--pc, #f2bf36); }
+
+.packet.dish { background: #fff; border-radius: 50%; height: 12px; margin-top: -16px; box-shadow: inset 0 0 0 2px #ddd; }
+.packet.dish::after { left: 30%; right: 30%; top: 25%; width: auto; height: 50%; background: var(--pc, #f2bf36); border-radius: 50%; transform: none; }
+.walker svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.walker .bar { position: absolute; left: 10%; right: 10%; bottom: -3px; height: 5px; border-radius: 3px; background: rgba(0,0,0,.35); overflow: hidden; }
+.walker .bar i { display: block; height: 100%; width: 100%; background: var(--good); }
+.walker.tut .bar { display: none; }
+.walker .tag {
+  position: absolute; bottom: calc(100% - 2px); left: 50%; transform: translateX(-50%) rotate(-2deg);
+  background: #fff; color: var(--ink); border-radius: 7px; padding: 2px 7px 3px; box-shadow: 0 2px 0 rgba(0,0,0,.2);
+  font-family: var(--font-sign); font-weight: 800; font-size: .72rem; line-height: 1.1; text-align: center; white-space: nowrap; z-index: 4;
+}
+.walker .tag small { display: block; color: var(--gac-dark); font-weight: 700; }
+.walker .tag.num { background: var(--sign); color: var(--gold); }
+.walker .tag.mood { background: var(--sign); color: var(--gold); }
+.walker.front .tag { animation: pop .3s ease-out both; }
+@keyframes pop { from { transform: translateX(-50%) scale(0); } }
+.walking svg { animation: bob .22s ease-in-out infinite alternate; }
+.walking .leg-l, .walking .leg-r, .walking .arm-l, .walking .arm-r { transform-box: fill-box; transform-origin: 50% 0; animation: swing .44s ease-in-out infinite alternate; }
+.walking .leg-r, .walking .arm-l { animation-direction: alternate-reverse; }
+@keyframes bob { to { transform: translateY(-3px); } }
+@keyframes swing { from { transform: rotate(-16deg); } to { transform: rotate(16deg); } }
+.walker.impatient svg { animation: tap .35s ease-in-out infinite alternate; }
+@keyframes tap { to { transform: translateX(2px) rotate(1.5deg); } }
+.float { position: absolute; z-index: 6; font-family: var(--font-sign); font-weight: 800; color: var(--good); font-size: 1rem; text-shadow: 0 1px 0 #fff, 0 0 4px #fff; animation: floatup 1.4s ease-out both; pointer-events: none; transform: translateX(-50%); white-space: nowrap; }
+.float.bad { color: var(--bad); }
+@keyframes floatup { to { translate: 0 -40px; opacity: 0; } }
+.empty-note { position: absolute; left: 0; right: 0; bottom: 30%; text-align: center; font-family: var(--font-sign); font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4); font-size: .82rem; padding-inline: 8px; }
+
+/* Kitchen */
+.k-body { flex: 1; min-height: 0; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+/* Recipe card for the dish being cooked: its own column at the kitchen's right edge on wide screens,
+   a collapsible card pinned to the bottom-right corner on phones. */
+.recipe { background: #fff; border: 2px solid var(--sign); border-radius: 10px; font-size: .8rem; line-height: 1.35; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.rc-head { background: var(--sign); color: var(--gold); padding: 4px 8px; display: flex; align-items: center; gap: 6px; font-family: var(--font-sign); font-weight: 800; }
+.rc-head .t { flex: 1; min-width: 0; line-height: 1.1; }
+.rc-head .t small { display: block; color: #fff; font-weight: 700; font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-head button { border: 1.5px solid var(--gold); background: transparent; color: var(--gold); border-radius: 999px; font-size: .7rem; font-weight: 800; padding: 0 7px; height: 22px; flex: none; }
+.rc-body { overflow-y: auto; padding: 6px 8px 8px; min-height: 0; }
+.rc-body ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.rc-body li { border-left: 3px solid #e6d7b0; padding: 1px 0 1px 7px; color: var(--ink-soft); }
+.rc-body li b { color: var(--ink); font-family: var(--font-sign); }
+.rc-body li.now { border-color: var(--gac); background: #fff1bf; border-radius: 0 6px 6px 0; color: var(--ink); }
+.rc-body li.done { border-color: var(--good); opacity: .75; }
+.rc-body li.done b::after { content: " ✓"; color: var(--good); }
+.chips { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.chips span { border: 1.5px solid #e6d7b0; border-radius: 999px; padding: 0 6px; font-size: .72rem; font-weight: 700; background: #fff; }
+.chips span.ok { border-color: var(--good); color: var(--good); }
+.chips span.ok::before { content: "✓ "; }
+.rc-mode { margin-top: 2px; font-weight: 800; color: var(--gac-dark); font-size: .74rem; }
+.rc-empty { color: var(--ink-soft); }
+.rc-queue { margin-top: 8px; padding-top: 6px; border-top: 2px dashed #e6d7b0; display: flex; flex-direction: column; gap: 3px; font-size: .74rem; color: var(--ink-soft); }
+.rc-queue > b { font-family: var(--font-sign); color: var(--sign); font-size: .8rem; }
+.rc-queue div b { color: var(--gac-dark); }
+@media (max-width: 899px) {
+  .recipe { position: absolute; right: 8px; bottom: 8px; width: min(64%, 260px); max-height: calc(100% - 40px); z-index: 6; box-shadow: 0 6px 16px rgba(36,22,42,.35); }
+  .recipe.min { width: auto; max-width: min(64%, 260px); }
+  .recipe.min .rc-body { display: none; }
+  .kitchen .controls { padding-bottom: 44px; }
+}
+@media (min-width: 900px) {
+  .rc-head button { display: none; }
+}
+@media (min-width: 900px) {
+  .k-body { display: grid; grid-template-columns: minmax(280px, 30%) minmax(0, 1fr) minmax(220px, 24%); grid-template-rows: auto minmax(0, 1fr); column-gap: 14px; row-gap: 6px; overflow: hidden; }
+  .recipe { grid-column: 3; grid-row: 1 / span 2; }
+  .rail { grid-column: 1; }
+  .cook { grid-column: 1; align-self: start; }
+  .controls { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; min-height: 0; padding: 2px 4px 4px 0; }
+}
+.rail { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 2px; min-height: 52px; border-bottom: 2px dashed #e6d7b0; flex: none; }
+.rail-empty { color: var(--ink-soft); font-size: .85rem; align-self: center; }
+.tk {
+  flex: none; width: 104px; border: 2px solid #e6d7b0; background: #fff; border-radius: 8px; padding: 3px 7px 6px; text-align: left; color: var(--ink);
+  position: relative; overflow: hidden; font-family: var(--font-body);
+}
+.tk b { font-family: var(--font-sign); font-weight: 800; color: var(--gac-dark); font-size: .78rem; }
+.tk div { font-weight: 800; font-size: .8rem; line-height: 1.15; }
+.tk small { display: block; font-size: .68rem; color: var(--ink-soft); }
+.tk i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--good); }
+.tk.cooking { border-color: var(--sign); background: #fff1bf; }
+.tk.pulse, .pulse { animation: pulse 1.1s ease-in-out infinite; border-color: var(--good) !important; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(47,138,42,.35); } }
+.cook { display: grid; grid-template-columns: minmax(96px, 30%) 1fr; gap: 10px; align-items: center; flex: none; }
+.pot { position: relative; }
+.pot svg { width: 100%; height: auto; display: block; overflow: visible; }
+.steam { position: absolute; top: -18%; left: 50%; width: 60%; height: 55%; transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .6s; }
+.steam.on { opacity: 1; }
+.steam span { position: absolute; bottom: 0; width: 14px; height: 44px; border-radius: 50%; background: radial-gradient(closest-side, rgba(255,255,255,.95), transparent); animation: rise 2.2s linear infinite; filter: drop-shadow(0 0 2px rgba(0,0,0,.15)); }
+.steam span:nth-child(1) { left: 15%; } .steam span:nth-child(2) { left: 45%; animation-delay: .7s; } .steam span:nth-child(3) { left: 75%; animation-delay: 1.4s; }
+@keyframes rise { 0% { transform: translateY(20px) scale(.6); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-40px) scale(1.4); opacity: 0; } }
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0 0 6px; padding: 0; list-style: none; }
+.steps li { font-family: var(--font-sign); font-weight: 800; font-size: .74rem; text-align: center; padding: 1px 0; border-radius: 6px; color: var(--ink-soft); border: 2px solid #e6d7b0; }
+.steps li.now { background: var(--sign); color: var(--gold); border-color: var(--sign); }
+.steps li.done { color: var(--good); border-color: var(--good); }
+.now-title { font-family: var(--font-sign); font-weight: 800; font-size: 1.05rem; color: var(--sign); line-height: 1.15; }
+.now-title small { display: block; font-size: .8rem; color: var(--gac-dark); }
+.toast { font-family: var(--font-sign); font-weight: 800; font-size: .85rem; min-height: 1.2em; }
+.toast.bad { color: var(--bad); } .toast.good { color: var(--good); }
+.controls { display: flex; flex-direction: column; gap: 8px; }
+.hint { margin: 0; font-size: .86rem; color: var(--ink-soft); line-height: 1.4; }
+.hint strong { color: var(--ink); }
+.coach { background: var(--sign); color: #fff; border-radius: 10px; padding: 7px 10px 8px; font-size: .84rem; line-height: 1.4; }
+.coach b.t { display: block; font-family: var(--font-sign); color: var(--gold); font-size: .9rem; }
+.coach p { margin: 1px 0 0; }
+.coach ol { margin: 3px 0 0; padding-left: 18px; }
+.coach em { font-style: normal; color: var(--gold); font-weight: 600; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  flex: 1; min-width: 0; border: 0; border-radius: 10px; padding: 9px 10px;
+  font-size: 1rem; font-weight: 800; color: #fff; background: var(--gac); box-shadow: 0 4px 0 var(--gac-dark); transition: transform .06s;
+}
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--gac-dark); }
+.btn.alt { background: var(--sign); color: var(--gold); box-shadow: 0 4px 0 var(--sign-deep); }
+.btn.yellow { background: var(--gold); color: var(--ink); box-shadow: 0 4px 0 #c99500; }
+.btn.ghost { background: transparent; color: var(--sign); box-shadow: inset 0 0 0 2px var(--sign); }
+.btn.small { padding: 6px 8px; font-size: .88rem; }
+.btn:disabled { opacity: .45; }
+.gauge { position: relative; height: 30px; border-radius: 9px; background: #efe3c3; overflow: hidden; border: 2px solid var(--sign); }
+.gauge .zn { position: absolute; top: 0; bottom: 0; background: rgba(47,138,42,.28); border-inline: 2px solid var(--good); }
+.gauge .zn.stir { background: rgba(246,194,26,.45); border-color: #c99500; }
+.gauge .zn.warn { background: rgba(194,50,31,.25); border: 0; }
+.gauge .needle { position: absolute; top: -2px; bottom: -2px; width: 5px; margin-left: -2px; background: var(--sign); border-radius: 2px; }
+.gauge .fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #fff, var(--gold)); opacity: .6; }
+.scale { display: flex; justify-content: space-between; font-family: var(--font-sign); font-weight: 700; font-size: .74rem; color: var(--ink-soft); margin-top: -5px; font-variant-numeric: tabular-nums; }
+.readout { font-family: var(--font-sign); font-weight: 800; font-size: 1.1rem; text-align: center; font-variant-numeric: tabular-nums; color: var(--sign); }
+.items { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
+.ing {
+  border: 2px solid #e6d7b0; background: #fff; color: var(--ink); border-radius: 10px; padding: 5px 3px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 700; font-size: .78rem; line-height: 1.1; position: relative;
+}
+.ing .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--c); box-shadow: inset -3px -4px 0 rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.12); }
+.ing.in { background: #fff1bf; border-color: var(--sign); }
+.ing .n { font-size: .68rem; font-weight: 800; color: var(--gac-dark); min-height: .75rem; }
+.ing .tag2 { position: absolute; top: -8px; right: -5px; background: var(--good); color: #fff; font-size: .66rem; font-weight: 800; border-radius: 999px; padding: 0 5px; }
+.result { background: #fff; border: 2px solid #e6d7b0; border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.result .stars { font-size: 1.4rem; letter-spacing: 3px; color: var(--gold); text-shadow: 0 2px 0 #c99500; line-height: 1; }
+.result .stars .off { color: #e3d6b4; text-shadow: none; }
+.result ul { margin: 0; padding-left: 18px; color: var(--bad); font-size: .84rem; }
+.result .ok { color: var(--good); font-weight: 600; }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; background: rgba(36,22,42,.72); padding-inline: 16px; padding-block: 16px; }
+.card { width: 100%; max-width: 460px; background: var(--counter); color: var(--ink); border-radius: 16px; padding: 0 18px 18px; box-shadow: 0 20px 50px rgba(0,0,0,.45); display: flex; flex-direction: column; gap: 10px; max-height: 100%; overflow-y: auto; border: 3px solid var(--sign); font-size: 15px; }
+.card .head { margin: 0 -18px 2px; background: var(--sign); padding: 12px 18px 10px; position: sticky; top: 0; z-index: 1; }
+.card h2 { font-family: var(--font-sign); font-weight: 800; text-transform: uppercase; font-size: 1.45rem; margin: 0; color: var(--gold); line-height: 1.05; text-wrap: balance; }
+.card h3 { font-family: var(--font-sign); font-weight: 800; font-size: 1.02rem; margin: 4px 0 0; color: var(--sign); }
+.card p { margin: 0; line-height: 1.45; }
+.card ul { margin: 0; padding-left: 20px; line-height: 1.5; font-size: .92rem; }
+.card .pay { font-family: var(--font-sign); font-weight: 800; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.zones3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: .8rem; line-height: 1.3; }
+.zones3 div { background: #fff; border: 2px solid #e6d7b0; border-radius: 10px; padding: 6px 7px; }
+.zones3 b { display: block; font-family: var(--font-sign); color: var(--sign); font-size: .86rem; }
+.card ol.guide { counter-reset: s; list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; font-size: .9rem; line-height: 1.4; }
+.card ol.guide li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; }
+.card ol.guide li::before { counter-increment: s; content: counter(s); width: 26px; height: 26px; border-radius: 50%; background: var(--sign); color: var(--gold); font-family: var(--font-sign); font-weight: 800; display: grid; place-items: center; }
+.recipes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: .8rem; line-height: 1.35; }
+.recipes div { background: #fff; border: 2px solid #e6d7b0; border-radius: 10px; padding: 6px 8px; min-width: 0; }
+.recipes b { display: block; font-family: var(--font-sign); color: var(--gac-dark); font-size: .9rem; }
+
+@media (max-width: 899px) {
+  .k-body { padding: 6px; gap: 6px; }
+  .cook { grid-template-columns: 60px 1fr !important; gap: 8px; }
+  .steps { margin-bottom: 3px; }
+  .now-title { font-size: .9rem; }
+  .now-title small { display: inline; margin-left: 4px; }
+  .rail { min-height: 44px; }
+  .tk { width: 92px; padding: 2px 6px 5px; }
+  .gauge { height: 24px; }
+  .btn { padding: 7px 8px; font-size: .9rem; }
+  .items { grid-template-columns: repeat(auto-fill, minmax(66px, 1fr)) !important; gap: 5px !important; }
+  .ing { font-size: .68rem !important; padding: 3px 2px !important; }
+  .ing .dot { width: 16px !important; height: 16px !important; }
+  .coach { font-size: .78rem; padding: 6px 9px; }
+}
+/* Kitchen stations: every ingredient sits in its own steel tray */
+.station { display: flex; flex-direction: column; gap: 4px; }
+.station h4 { margin: 0; font-family: var(--font-sign); font-weight: 800; font-size: .76rem; color: var(--sign); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 6px; }
+.station h4::after { content: ""; flex: 1; height: 2px; background: #e6d7b0; border-radius: 1px; }
+.trays { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.ing.tray { gap: 3px; padding: 5px 5px 4px; }
+.tray-dish { display: block; width: 100%; height: 30px; padding: 4px; border-radius: 7px; background: linear-gradient(180deg, #eef2f3, #b7c2c6); box-shadow: inset 0 -2px 0 rgba(0,0,0,.18), 0 1px 2px rgba(0,0,0,.15); }
+.tray-dish i { display: block; height: 100%; border-radius: 4px; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.tray-dish[data-tex=grain] i { background: radial-gradient(ellipse at 40% 45%, rgba(0,0,0,.22) 0 1.6px, transparent 2.2px) 0 0 / 7px 6px, radial-gradient(ellipse at 50% 50%, rgba(255,255,255,.5) 0 1.4px, transparent 2px) 3px 3px / 7px 6px, var(--c); }
+.tray-dish[data-tex=powder] i { background: radial-gradient(circle, rgba(255,255,255,.75) 0 1px, transparent 1.5px) 0 0 / 5px 5px, radial-gradient(circle, rgba(0,0,0,.08) 0 1px, transparent 1.5px) 2px 2px / 5px 5px, var(--c); }
+.tray-dish[data-tex=liquid] i { background: linear-gradient(180deg, rgba(255,255,255,.6), transparent 55%), var(--c); }
+.tray-dish[data-tex=leaf] i { background: repeating-linear-gradient(65deg, var(--c) 0 6px, #2f7a2b 6px 8px); }
+.tray-dish[data-tex=slice] i { background: repeating-linear-gradient(90deg, var(--c) 0 7px, #d4ae3a 7px 8px); }
+.tray-dish[data-tex=bits] i { background: radial-gradient(ellipse, #6e3b14 0 2px, transparent 2.6px) 0 0 / 7px 6px, var(--c); }
+.tray-dish[data-tex=oil] i { background: radial-gradient(circle, #4f8f2c 0 1.8px, transparent 2.3px) 0 0 / 6px 6px, #f3e3a0; }
+.tray-dish[data-tex=seed] i { background: radial-gradient(ellipse, #3a2a1a 0 1px, transparent 1.6px) 0 0 / 4px 4px, var(--c); }
+.tray-dish[data-tex=flake] i { background: repeating-linear-gradient(35deg, var(--c) 0 3px, rgba(0,0,0,.14) 3px 4px), var(--c); }
+.ing.tray.in .tray-dish { box-shadow: inset 0 -2px 0 rgba(0,0,0,.18), 0 0 0 2px var(--sign); }
+.ing.tray.in .tray-dish i { opacity: .55; }
+.soak-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: start; }
+.soak-gauge { display: flex; flex-direction: column; gap: 6px; }
+.ing.basin { cursor: default; }
+.ing.basin .tray-dish { height: 40px; border-radius: 50% / 40%; }
+.ing.basin .tray-dish i { border-radius: 50% / 40%; background: radial-gradient(ellipse at 50% 60%, #f6efdc 0 45%, transparent 47%), linear-gradient(180deg, rgba(255,255,255,.6), transparent 55%), var(--c); }
+.scoop { position: fixed; left: 0; top: 0; width: 46px; height: 30px; z-index: 40; pointer-events: none; }
+.scoop .bowl { position: absolute; left: 0; top: 10px; width: 24px; height: 15px; border-radius: 2px 2px 13px 13px; background: linear-gradient(180deg, #e3e9eb, #9aa6ab); }
+.scoop .bowl::before { content: ""; position: absolute; left: 2px; right: 2px; top: -5px; height: 10px; border-radius: 50%; background: var(--c); box-shadow: inset 0 -2px 0 rgba(0,0,0,.15); }
+.scoop .handle { position: absolute; left: 20px; top: 10px; width: 26px; height: 4px; background: linear-gradient(90deg, #a87b4f, #7a5532); border-radius: 2px; transform: rotate(-28deg); transform-origin: left center; }
+.crumb { position: fixed; width: 4px; height: 4px; border-radius: 50%; z-index: 39; pointer-events: none; box-shadow: 0 0 0 .5px rgba(0,0,0,.2); }
+.pot.plop svg { animation: plop .32s ease-out; }
+@keyframes plop { 40% { transform: scale(1.05, .96); } }
+.paddle { position: absolute; left: 50%; top: -12%; width: 9px; height: 58%; margin-left: -4px; border-radius: 4px 4px 9px 9px; background: linear-gradient(90deg, #c49a62, #8d6e4a); transform-origin: 50% 100%; animation: stirp .26s ease-in-out 4 alternate; z-index: 2; }
+@keyframes stirp { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+@media (max-width: 899px) {
+  .cook { position: sticky; top: -6px; z-index: 3; background: var(--counter); padding-block: 2px; }
+  .trays { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 5px; }
+  .tray-dish { height: 22px; padding: 3px; }
+  .soak-row { grid-template-columns: 70px minmax(0, 1fr); gap: 8px; }
+  .ing.basin .tray-dish { height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .walker { transition-duration: .01s; }
+  .walker *, .steam span, .pulse, .float { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="road" id="road" aria-hidden="true"></div>
+  <header class="hud">
+    <h1 class="brand">Quán Xôi Hà Nội</h1>
+    <div class="street"><small>PHỐ</small>HÀNG XÔI</div>
+    <span class="grow"></span>
+    <span class="chip" id="clock">5:30</span>
+    <span class="chip" id="count">0/8</span>
+    <span class="chip money" id="money">0đ</span>
+    <button class="iconbtn" id="guideBtn" type="button">Hướng dẫn</button>
+    <button class="iconbtn" id="fsBtn" type="button" aria-label="Toàn màn hình">⛶</button>
+    <button class="iconbtn" id="mute" type="button" aria-label="Bật/tắt âm thanh">🔊</button>
+  </header>
+
+  <section class="zone order" aria-label="Quầy gọi món">
+    <div class="zone-head"><span class="num">1</span>Quầy gọi món<span class="sub" id="lineSub">Chưa có khách</span></div>
+    <div class="ground" id="orderGround">
+      <svg class="wires" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true"><path d="M0 3 Q45 15 100 4"/><path d="M0 7 Q55 18 100 9"/><path d="M0 1 Q30 11 100 13"/></svg>
+      <div class="awning"></div>
+      <div class="menu-board" style="top:24%"><b>THỰC ĐƠN</b>Xôi xéo 25k<br>Xôi gấc 20k<br>Xôi lạc 15k<br>Xôi đỗ 15k</div>
+      <div class="order-counter"></div>
+    </div>
+    <div class="zone-foot"><button class="btn yellow small" id="takeBtn" type="button" disabled>Nhận order</button></div>
+  </section>
+
+  <div class="boxline" aria-label="Tủ xôi và hộp xôi đã gói">
+    <div class="tubs">
+      <div class="tub"><i style="--c:#d8402f;--d:0s"></i>Xôi gấc</div>
+      <div class="tub"><i style="--c:#f2bf36;--d:.6s"></i>Xôi xéo</div>
+      <div class="tub"><i style="--c:#f3ead2;--d:1.2s"></i>Xôi lạc</div>
+      <div class="tub"><i style="--c:#f2df9a;--d:1.8s"></i>Xôi đỗ</div>
+    </div>
+    <div class="box-track" id="boxTrack"><span class="label">Hộp xôi gói xong chuyển ra quầy lấy →</span></div>
+  </div>
+
+  <section class="zone kitchen" aria-label="Bếp nấu xôi">
+    <div class="zone-head"><span class="num">2</span>Bếp nấu xôi<span class="sub" id="kitchenSub"></span></div>
+    <div class="k-body">
+      <div class="rail" id="rail"></div>
+      <div class="cook">
+        <div class="pot" id="potBox">
+          <div class="steam" id="steam"><span></span><span></span><span></span></div>
+          <svg viewBox="0 0 200 170" aria-label="Chõ đồ xôi">
+            <defs>
+              <linearGradient id="potg" x1="0" x2="1"><stop offset="0" stop-color="#7d8b8f"/><stop offset=".45" stop-color="#e2e8ea"/><stop offset="1" stop-color="#6d7a7e"/></linearGradient>
+              <radialGradient id="gloss" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></radialGradient>
+              <pattern id="grains" width="9" height="6" patternUnits="userSpaceOnUse"><ellipse cx="3" cy="2" rx="2.4" ry="1.1" fill="#fff" fill-opacity=".55"/><ellipse cx="7.5" cy="4.6" rx="2.2" ry="1" fill="#fff" fill-opacity=".45"/></pattern>
+            </defs>
+            <ellipse cx="100" cy="160" rx="80" ry="8" fill="rgba(0,0,0,.15)"/>
+            <path d="M30 70 L170 70 L156 152 Q100 166 44 152 Z" fill="url(#potg)"/>
+            <rect x="14" y="88" width="20" height="9" rx="4" fill="#566266"/><rect x="166" y="88" width="20" height="9" rx="4" fill="#566266"/>
+            <ellipse cx="100" cy="70" rx="72" ry="20" fill="#566266"/>
+            <ellipse id="rice" cx="100" cy="70" rx="64" ry="16" fill="#3c4649"/>
+            <ellipse id="grainLayer" cx="100" cy="70" rx="64" ry="16" fill="url(#grains)" style="opacity:0"/>
+            <g id="bits"></g>
+            <ellipse id="glossLayer" cx="100" cy="68" rx="60" ry="14" fill="url(#gloss)" opacity="0"/>
+            <g id="tops"></g>
+            <path d="M30 70 Q100 100 170 70" stroke="#566266" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <ol class="steps" id="steps"><li>1 Ngâm</li><li>2 Trộn</li><li>3 Đồ</li><li>4 Bày</li></ol>
+          <div class="now-title" id="nowTitle">Bếp đang trống</div>
+          <div class="toast" id="toast"></div>
+        </div>
+      </div>
+      <div class="controls" id="controls"></div>
+      <aside class="recipe" id="recipe" aria-label="Công thức món đang nấu"></aside>
+    </div>
+  </section>
+
+  <section class="zone pickup" aria-label="Quầy lấy xôi">
+    <div class="zone-head"><span class="num">3</span>Lấy xôi · Ngồi ngõ<span class="sub" id="pickSub">0/3</span></div>
+    <div class="ground" id="pickGround">
+      <div class="alley"></div>
+      <span class="ngo">NGÕ 12</span>
+      <svg class="wires" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true"><path d="M0 4 Q50 16 100 3"/><path d="M0 9 Q40 17 100 7"/></svg>
+      <div class="shelf" id="shelf"><span data-s="0"></span><span data-s="1"></span><span data-s="2"></span></div>
+      <div class="ptable" id="table0" style="left:28%"></div><div class="ptable" id="table1" style="left:72%"></div>
+<span class="chair" style="left:15%"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M8 13 L32 33 M32 13 L8 33" stroke="#8a9096" stroke-width="3" stroke-linecap="round"/><rect x="3" y="8" width="34" height="7" rx="2" fill="#c0392b"/><rect x="3" y="13" width="34" height="2" fill="rgba(0,0,0,.25)"/></svg></span><span class="chair" style="left:41%"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M8 13 L32 33 M32 13 L8 33" stroke="#8a9096" stroke-width="3" stroke-linecap="round"/><rect x="3" y="8" width="34" height="7" rx="2" fill="#1f5fa8"/><rect x="3" y="13" width="34" height="2" fill="rgba(0,0,0,.25)"/></svg></span><span class="chair" style="left:59%"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M8 13 L32 33 M32 13 L8 33" stroke="#8a9096" stroke-width="3" stroke-linecap="round"/><rect x="3" y="8" width="34" height="7" rx="2" fill="#c0392b"/><rect x="3" y="13" width="34" height="2" fill="rgba(0,0,0,.25)"/></svg></span><span class="chair" style="left:85%"><svg viewBox="0 0 40 34" aria-hidden="true"><path d="M8 13 L32 33 M32 13 L8 33" stroke="#8a9096" stroke-width="3" stroke-linecap="round"/><rect x="3" y="8" width="34" height="7" rx="2" fill="#1f5fa8"/><rect x="3" y="13" width="34" height="2" fill="rgba(0,0,0,.25)"/></svg></span>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="overlay"></div>
+
+<script>
+(() => {
+  // ---------- Data ----------
+  const ING = {
+    nep:    { s: 'Gạo nếp', c: '#f6efdc', tex: 'grain' },
+    gac:    { s: 'Gấc chín', c: '#d63b2c', g: 'main', tex: 'grain' },
+    ruou:   { s: 'Rượu trắng', c: '#cfe3ea', g: 'spice', tex: 'liquid' },
+    duong:  { s: 'Đường', c: '#fffaf0', g: 'spice', tex: 'powder' },
+    lac:    { s: 'Lạc', c: '#b9794a', g: 'main', tex: 'grain' },
+    doxanh: { s: 'Đỗ xanh', c: '#e9c64a', g: 'main', tex: 'grain' },
+    nghe:   { s: 'Nghệ', c: '#f0a01c', g: 'spice', tex: 'powder' },
+    muoi:   { s: 'Muối', c: '#ffffff', g: 'spice', tex: 'powder' },
+    dua:    { s: 'Cốt dừa', c: '#efe9db', g: 'main', tex: 'liquid', decoy: 'Xôi Bắc không chan nước cốt dừa' },
+    ladua:  { s: 'Lá dứa', c: '#4fa04a', g: 'main', tex: 'leaf', decoy: 'Xôi lá dứa là kiểu miền Nam' },
+  };
+  const TOP = {
+    donghien: { s: 'Đỗ nắm thái', c: '#efd36b', tex: 'slice' },
+    hanhphi:  { s: 'Hành phi', c: '#a8642c', tex: 'bits' },
+    mohanh:   { s: 'Mỡ hành', c: '#9fc76a', tex: 'oil' },
+    muoivung: { s: 'Muối vừng', c: '#d8c9a6', tex: 'seed' },
+    ruoc:     { s: 'Ruốc', c: '#c98a52', tex: 'flake' },
+    duanao:   { s: 'Dừa nạo', c: '#fbf8f0', tex: 'flake', decoy: 'Dừa nạo hay rắc xôi miền Nam' },
+  };
+  const RECIPES = {
+    gac: { name: 'xôi gấc', price: 20, need: ['nep', 'gac', 'ruou', 'duong', 'muoi'], tops: [], extra: [] },
+    lac: { name: 'xôi lạc', price: 15, need: ['nep', 'lac', 'muoi'], tops: [], extra: ['muoivung'] },
+    do:  { name: 'xôi đỗ xanh', price: 15, need: ['nep', 'doxanh', 'muoi'], tops: [], extra: ['muoivung'] },
+    xeo: { name: 'xôi xéo', price: 25, need: ['nep', 'nghe', 'muoi'], tops: ['donghien', 'hanhphi', 'mohanh'], extra: ['ruoc'] },
+  };
+  const PEOPLE = [
+    { who: 'Bác xe ôm', me: 'bác', skin: '#b97a4a', hair: 'short', hc: '#3a3a3a', shirt: '#2f6b3a', pants: '#3b3f4a', hat: 'helmet', hatc: '#1f3f9a', vest: '#2e8a3a' },
+    { who: 'Cô giáo', me: 'cô', skin: '#efc49c', hair: 'long', hc: '#1d1410', shirt: '#ffffff', pants: '#2a3a7a', ao: true },
+    { who: 'Bạn sinh viên', me: 'mình', skin: '#e2ae80', hair: 'short', hc: '#1d1410', shirt: '#3c7fd6', pants: '#2b2b33', bag: '#e0603a' },
+    { who: 'Chú bảo vệ', me: 'chú', skin: '#a8703e', hair: 'short', hc: '#2a2a2a', shirt: '#4f6b3f', pants: '#3b4a33', hat: 'cap', hatc: '#3b4a33' },
+    { who: 'Bà cụ đi chợ', me: 'bà', skin: '#e1bf98', hair: 'bun', hc: '#cfcfcf', shirt: '#8a5a9e', pants: '#222', hat: 'non', basket: true },
+    { who: 'Anh công nhân', me: 'anh', skin: '#c08758', hair: 'short', hc: '#1d1410', shirt: '#f08a24', pants: '#2f4f8a', hat: 'hard', hatc: '#f6c21a' },
+    { who: 'Chị nhân viên', me: 'chị', skin: '#f0c7a0', hair: 'bob', hc: '#3a2015', shirt: '#d64f7a', pants: '#2b2b33', bag: '#3a2541' },
+  ];
+  const DRIVER = { who: 'Tài xế công nghệ', me: 'anh', skin: '#c99062', hair: 'short', hc: '#1d1410', shirt: '#1f9d55', pants: '#2b2b33', hat: 'helmet', hatc: '#1f9d55', driver: true };
+  const SEAT_X = [15, 41, 59, 85];
+  const TOTAL = 8, LINE_MAX = 3, PICK_MAX = 3;
+  const LINE_X = [56, 33, 12];   // % left in the order zone; 0 is at the counter
+  const PICK_X = [18, 50, 82];   // % left in the pickup zone, one per shelf slot
+  const cap = (s) => s[0].toUpperCase() + s.slice(1);
+
+  // Front-facing character, viewBox 0 0 60 112. mood: happy | ok | sad | angry
+  function charSVG(p, mood = 'ok') {
+    const dark = '#2a1d10';
+    const mouth = { happy: 'M25 32 Q30 37.5 35 32', ok: 'M26.5 33.5 Q30 35 33.5 33.5', sad: 'M25.5 35.5 Q30 31 34.5 35.5', angry: 'M26 35 L34 34' }[mood];
+    let hairBack = '', hat = '', extra = '';
+    if (p.hair === 'long') hairBack = `<path d="M16 22 Q16 46 20 50 L40 50 Q44 46 44 22 Z" fill="${p.hc}"/>`;
+    if (p.hair === 'bob') hairBack = `<path d="M16 22 Q15 38 19 40 L41 40 Q45 38 44 22 Z" fill="${p.hc}"/>`;
+    let hairTop = `<path d="M16.5 25 Q17 10 30 10 Q43 10 43.5 25 Q39 17 30 18 Q21 17 16.5 25Z" fill="${p.hc}"/>`;
+    if (p.hair === 'bun') hairTop += `<circle cx="30" cy="9" r="5" fill="${p.hc}"/>`;
+    if (p.hat === 'non') hat = `<path d="M1 21 L30 0 L59 21 Q30 25 1 21Z" fill="#e9cf8a"/><path d="M8 18 L30 3 M52 18 L30 3 M30 3 L30 22" stroke="#c9a85e" stroke-width="1"/>`;
+    if (p.hat === 'helmet') hat = `<path d="M15 23 Q15 7 30 7 Q45 7 45 23 Z" fill="${p.hatc}"/><path d="M15 23 L45 23" stroke="#fff" stroke-width="2"/>`;
+    if (p.hat === 'hard') hat = `<path d="M15 21 Q15 6 30 6 Q45 6 45 21 Z" fill="${p.hatc}"/><rect x="12" y="19" width="36" height="4" rx="2" fill="${p.hatc}"/><path d="M30 6 L30 19" stroke="#d9a400" stroke-width="2"/>`;
+    if (p.hat === 'cap') hat = `<path d="M16 19 Q16 7 30 7 Q44 7 44 19 Z" fill="${p.hatc}"/><path d="M16 19 L50 19 Q48 23 40 22 L16 21Z" fill="${p.hatc}"/>`;
+    const brows = mood === 'angry' ? `<path d="M22.5 21.5 L27.5 23.5 M37.5 21.5 L32.5 23.5" stroke="${dark}" stroke-width="1.6" stroke-linecap="round"/>` : '';
+    const sweat = mood === 'sad' || mood === 'angry' ? `<path d="M44 16 q2 4 0 6 q-2 -2 0 -6Z" fill="#7cc6f0"/>` : '';
+    const body = p.ao
+      ? `<path d="M15 44 Q15 39 22 38 L38 38 Q45 39 45 44 L47 98 L13 98 Z" fill="${p.shirt}" stroke="#e6e0d6" stroke-width="1"/>`
+      : `<rect x="14" y="38" width="32" height="38" rx="10" fill="${p.shirt}"/>`;
+    if (p.vest) extra += `<path d="M16 42 L24 40 L24 74 L16 72Z M44 42 L36 40 L36 74 L44 72Z" fill="${p.vest}" opacity=".9"/><path d="M16 56 L24 56 M36 56 L44 56" stroke="#f6e05a" stroke-width="2"/>`;
+    if (p.bag) extra += `<path d="M16 40 L44 66" stroke="${p.bag}" stroke-width="3"/><rect x="40" y="62" width="10" height="9" rx="2" fill="${p.bag}"/>`;
+    const basket = p.basket ? `<path d="M50 70 h10 l-2 10 h-6Z" fill="#c9a85e"/><path d="M51 70 q4 -7 8 0" stroke="#a9824a" stroke-width="1.5" fill="none"/>` : '';
+    const carry = p.carry ? `<rect x="2" y="66" width="18" height="10" rx="4" fill="#3f8a3a"/><path d="M11 64 L11 78" stroke="#c9a85e" stroke-width="2"/>` : '';
+    const legsY = p.ao ? 96 : 74;
+    const box = p.driver ? `<rect x="5" y="28" width="50" height="42" rx="5" fill="#178a48"/><rect x="5" y="42" width="50" height="5" fill="#fff" opacity=".55"/>` : '';
+    if (p.driver) extra += `<path d="M30 39 L30 76" stroke="#0f6b39" stroke-width="1.6"/><path d="M14 52 L46 52" stroke="#fff" stroke-width="2" opacity=".7"/>`;
+    const phone = p.driver && !p.carry ? `<rect x="5" y="62" width="8" height="12" rx="1.5" fill="#222"/><rect x="6.2" y="63.5" width="5.6" height="8" fill="#7cc6f0"/>` : '';
+    return `<svg viewBox="0 0 60 112" aria-hidden="true">
+      <ellipse cx="30" cy="108" rx="20" ry="3" fill="rgba(0,0,0,.22)"/>
+      <g class="leg-l"><rect x="19" y="${legsY}" width="9" height="${106 - legsY}" rx="3" fill="${p.pants}"/><ellipse cx="23" cy="106" rx="6" ry="3" fill="${dark}"/></g>
+      <g class="leg-r"><rect x="32" y="${legsY}" width="9" height="${106 - legsY}" rx="3" fill="${p.pants}"/><ellipse cx="37" cy="106" rx="6" ry="3" fill="${dark}"/></g>
+      ${p.ao ? `<rect x="19" y="90" width="22" height="8" fill="${p.pants}"/>` : ''}
+      ${box}${hairBack}
+      <g class="arm-l"><rect x="7" y="41" width="8" height="28" rx="4" fill="${p.shirt}"/><circle cx="11" cy="70" r="4" fill="${p.skin}"/>${phone}</g>
+      <g class="arm-r"><rect x="45" y="41" width="8" height="28" rx="4" fill="${p.shirt}"/><circle cx="49" cy="70" r="4" fill="${p.skin}"/>${basket}</g>
+      ${body}${extra}${carry}
+      <rect x="26" y="34" width="8" height="6" fill="${p.skin}"/>
+      <circle cx="30" cy="26" r="13" fill="${p.skin}"/>
+      ${hairTop}${hat}
+      <circle cx="25" cy="26.5" r="1.7" fill="${dark}"/><circle cx="35" cy="26.5" r="1.7" fill="${dark}"/>
+      <circle cx="21.5" cy="31" r="2.2" fill="#e8796a" opacity=".35"/><circle cx="38.5" cy="31" r="2.2" fill="#e8796a" opacity=".35"/>
+      ${brows}${sweat}
+      <path d="${mouth}" stroke="${dark}" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    orderGround: $('orderGround'), pickGround: $('pickGround'), shelf: $('shelf'), takeBtn: $('takeBtn'),
+    lineSub: $('lineSub'), pickSub: $('pickSub'), kitchenSub: $('kitchenSub'), rail: $('rail'), controls: $('controls'),
+    steps: $('steps'), nowTitle: $('nowTitle'), toast: $('toast'), steam: $('steam'),
+    rice: $('rice'), grain: $('grainLayer'), bits: $('bits'), tops: $('tops'), gloss: $('glossLayer'),
+    clock: $('clock'), count: $('count'), money: $('money'), overlay: $('overlay'), tables: [$('table0'), $('table1')],
+  };
+
+  let best = 0;
+  try { best = +localStorage.getItem('xoi-best') || 0; } catch (e) {}
+
+  // ---------- Sound ----------
+  let ac = null, muted = false;
+  function beep(f = 520, d = .08, type = 'triangle', v = .08) {
+    if (muted) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = type; o.frequency.value = f; g.gain.value = v;
+      o.connect(g); g.connect(ac.destination);
+      g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d);
+      o.start(); o.stop(ac.currentTime + d);
+    } catch (e) {}
+  }
+  const good = () => { beep(660); setTimeout(() => beep(880), 70); };
+  const bad = () => beep(180, .18, 'sawtooth', .05);
+  const ding = () => { beep(1046, .15, 'sine', .07); };
+  $('mute').onclick = () => { muted = !muted; $('mute').textContent = muted ? '🔇' : '🔊'; };
+  $('fsBtn').onclick = () => {
+    try {
+      const d = document;
+      if (d.fullscreenElement) d.exitFullscreen().catch(() => {});
+      else d.documentElement.requestFullscreen().catch(() => {});
+    } catch (e) {}
+  };
+
+  // ---------- Helpers ----------
+  const rand = (a) => a[Math.floor(Math.random() * a.length)];
+  const vnd = (k) => (k * 1000).toLocaleString('vi-VN') + 'đ';
+  const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+  let toastT;
+  function toast(msg, kind = '') {
+    els.toast.textContent = msg; els.toast.className = 'toast ' + kind;
+    clearTimeout(toastT); toastT = setTimeout(() => { els.toast.textContent = ''; }, 2000);
+  }
+  function floatText(ground, xPct, text, kind = '') {
+    const f = document.createElement('div');
+    f.className = 'float ' + kind; f.textContent = text;
+    f.style.left = xPct + '%'; f.style.bottom = '70%';
+    ground.append(f); setTimeout(() => f.remove(), 1500);
+  }
+  const setStep = (i) => [...els.steps.children].forEach((li, k) => li.className = k < i ? 'done' : k === i ? 'now' : '');
+  const tut = () => !!(S && S.cook && S.cook.t.c.isTut);
+  const coach = (on, title, html) => on ? `<div class="coach"><b class="t">${title}</b>${html}</div>` : '';
+  const orderText = (c) => `${cap(c.r.name)}${c.extra ? ' + ' + TOP[c.extra].s.toLowerCase() : ''}`;
+  const modeText = (c) => c.p.driver ? 'Đơn app · mang về' : c.mode === 'here' ? 'Ăn tại quán' : 'Mang về';
+  const DISH_COLOR = { gac: '#d8402f', xeo: '#f2bf36', lac: '#efe4c8', do: '#f2df9a' };
+
+  // ---------- State ----------
+  let S = null, raf = null, nTicket = 0;
+
+  function makeLineup(withTut) {
+    let pool = [];
+    return Array.from({ length: TOTAL }, (_, i) => {
+      const isTut = withTut && i === 0;
+      const type = isTut ? 'xeo' : i === 0 ? 'gac' : rand(Object.keys(RECIPES));
+      if (!pool.length) pool = PEOPLE.slice().sort(() => Math.random() - .5);
+      const isDriver = !isTut && (i === 2 || i === 5);
+      const p = isTut ? PEOPLE[1] : isDriver ? DRIVER : pool.pop();
+      const r = RECIPES[type];
+      const extra = isTut ? null : (r.extra.length && Math.random() < .5 ? r.extra[0] : null);
+      const mode = isTut ? 'here' : isDriver ? 'away' : (Math.random() < .55 ? 'here' : 'away');
+      // App drivers are in a hurry: less patience.
+      const pmax = isTut ? Infinity : Math.max(isDriver ? 45 : 55, (95 - i * 5) * (isDriver ? .8 : 1));
+      return { id: i, type, r, p, extra, mode, isTut, patience: pmax, pmax, state: 'line', mood: 'happy', el: null, slot: -1, ticket: null };
+    });
+  }
+
+  function newDay(withTut) {
+    stopLoop(); hideCard();
+    els.orderGround.querySelectorAll('.walker, .float').forEach(n => n.remove());
+    els.pickGround.querySelectorAll('.walker, .float').forEach(n => n.remove());
+    els.shelf.querySelectorAll('span').forEach(s => s.innerHTML = '');
+    els.tables.forEach(t => t.innerHTML = '');
+    S = { t: 0, money: 0, stars: 0, served: 0, lost: 0, done: 0, spawned: 0, nextSpawn: .3, paused: false,
+          lineup: makeLineup(withTut), line: [], pick: [null, null, null], seats: [null, null, null, null], tickets: [], cook: null, last: null, tutorial: withTut, tutStage: withTut ? 'take' : null };
+    nTicket = 0;
+    els.money.textContent = vnd(0);
+    renderAll();
+    let prev = performance.now();
+    const loop = (now) => {
+      const dt = Math.min(.1, (now - prev) / 1000); prev = now;
+      if (!S.paused) update(dt);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+  function stopLoop() { cancelAnimationFrame(raf); raf = null; }
+
+  function update(dt) {
+    S.t += dt;
+    const m = 5 * 60 + 30 + Math.floor(S.t * .75);
+    els.clock.textContent = `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+    // Spawn the next customer when there is room in the line. During the tutorial only the first one comes.
+    const tutHold = S.tutorial && S.lineup[0].state !== 'gone' && S.spawned >= 1;
+    if (S.spawned < TOTAL && S.t >= S.nextSpawn && S.line.length < LINE_MAX && !tutHold) {
+      spawn(S.lineup[S.spawned++]);
+      S.nextSpawn = S.t + Math.max(9, 16 - S.spawned * .9);
+    }
+    // Patience for everyone in line or waiting at pickup.
+    for (const c of S.lineup) {
+      if (c.state !== 'line' && c.state !== 'waiting') continue;
+      if (!c.el) continue;
+      c.patience -= dt;
+      const f = c.isTut ? 1 : clamp(c.patience / c.pmax);
+      const bar = c.el.querySelector('.bar i');
+      if (bar) { bar.style.width = f * 100 + '%'; bar.style.background = f > .5 ? 'var(--good)' : f > .25 ? 'var(--gold)' : 'var(--bad)'; }
+      setMood(c, f > .6 ? 'happy' : f > .3 ? 'ok' : f > .12 ? 'sad' : 'angry');
+      if (c.patience <= 0) leaveAngry(c);
+    }
+    if (S.stageTick) S.stageTick(dt);
+    renderRailBars();
+    if (S.spawned >= TOTAL && !S.line.length && S.pick.every(x => !x) && S.seats.every(x => !x) && !S.cook && !S.ending) {
+      S.ending = true; setTimeout(endDay, 900);
+    }
+  }
+
+  // ---------- Customers ----------
+  function makeWalker(c) {
+    const w = document.createElement('div');
+    w.className = 'walker' + (c.isTut ? ' tut' : '');
+    w.innerHTML = charSVG(c.p, c.mood) + '<div class="bar"><i></i></div>';
+    return w;
+  }
+  function walkTo(c, xPct) {
+    const w = c.el;
+    w.classList.add('walking');
+    w.style.left = xPct + '%';
+    clearTimeout(w._t); w._t = setTimeout(() => w.classList.remove('walking'), 900);
+  }
+  function setMood(c, mood) {
+    if (c.mood === mood || !c.el) return;
+    c.mood = mood;
+    c.el.querySelector('svg').outerHTML = charSVG(c.p, mood);
+    c.el.classList.toggle('impatient', mood === 'angry');
+  }
+  function setTag(c, html, cls = '') {
+    let t = c.el.querySelector('.tag');
+    if (!html) { if (t) t.remove(); return; }
+    if (!t) { t = document.createElement('div'); c.el.append(t); }
+    t.className = 'tag ' + cls; t.innerHTML = html;
+  }
+  function spawn(c) {
+    c.el = makeWalker(c);
+    c.el.style.left = '-12%';
+    els.orderGround.append(c.el);
+    S.line.push(c);
+    requestAnimationFrame(() => requestAnimationFrame(layoutLine));
+  }
+  function layoutLine() {
+    S.line.forEach((c, i) => {
+      if (c.el.style.left !== LINE_X[i] + '%') walkTo(c, LINE_X[i]);
+      c.el.classList.toggle('front', i === 0);
+      if (i === 0) setTimeout(() => { if (S.line[0] === c && c.state === 'line') setTag(c, `${c.p.driver ? 'Đơn app: ' : ''}1 ${c.r.name}${c.extra ? `<small>+ ${TOP[c.extra].s.toLowerCase()}</small>` : ''}<small>${c.p.driver ? 'Mang về' : modeText(c)}</small>`); }, 900);
+      else setTag(c, '');
+    });
+    renderOrderZone();
+  }
+  function takeOrder() {
+    const c = S.line[0];
+    const slot = S.pick.indexOf(null);
+    if (!c || slot < 0) return;
+    good();
+    S.line.shift();
+    c.state = 'waiting'; c.slot = slot; S.pick[slot] = c;
+    c.ticket = { no: ++nTicket, c };
+    S.tickets.push(c.ticket);
+    // Walk out of the order zone to the right, then come into the pickup zone and stand at the slot.
+    setTag(c, '');
+    walkTo(c, 115);
+    const oldEl = c.el;
+    setTimeout(() => {
+      oldEl.remove();
+      if (c.state !== 'waiting') return;
+      c.el = makeWalker(c);
+      c.el.style.left = '-12%';
+      els.pickGround.append(c.el);
+      setTag(c, `#${c.ticket.no}`, 'num');
+      requestAnimationFrame(() => requestAnimationFrame(() => walkTo(c, PICK_X[slot])));
+    }, 900);
+    if (S.tutStage === 'take') S.tutStage = 'pick';
+    layoutLine(); renderAll();
+  }
+  els.takeBtn.onclick = takeOrder;
+
+  function leaveAngry(c) {
+    bad();
+    const ground = c.state === 'line' ? els.orderGround : els.pickGround;
+    const x = parseFloat(c.el.style.left);
+    if (c.state === 'line') { S.line.splice(S.line.indexOf(c), 1); }
+    else { S.pick[c.slot] = null; if (c.ticket) c.ticket.cancelled = true; S.tickets = S.tickets.filter(t => t !== c.ticket || (S.cook && S.cook.t === t)); }
+    c.state = 'gone'; S.lost++; S.done++;
+    setTag(c, 'Lâu quá!', 'mood');
+    floatText(ground, x, 'Khách bỏ đi', 'bad');
+    const el = c.el;
+    setTimeout(() => { el.classList.remove('impatient'); el.style.transition = 'left 1.2s linear'; el.classList.add('walking'); el.style.left = '-15%'; }, 600);
+    setTimeout(() => el.remove(), 1900);
+    layoutLine(); renderAll();
+  }
+
+  function deliver(c, stars, pay, tip, form) {
+    const slotEl = els.shelf.children[c.slot];
+    slotEl.innerHTML = form === 'plate' ? `<div class="packet dish" style="--pc:${DISH_COLOR[c.type]}"></div>` : '<div class="packet"></div>';
+    ding();
+    setTimeout(() => {
+      if (c.state !== 'waiting') return;
+      slotEl.innerHTML = '';
+      c.state = 'gone'; S.pick[c.slot] = null; S.done++;
+      const mood = stars >= 2 ? 'happy' : stars === 1 ? 'ok' : 'angry';
+      const seat = form === 'plate' ? S.seats.indexOf(null) : -1;
+      c.mood = ''; if (seat < 0) c.p = Object.assign({}, c.p, { carry: true }); setMood(c, mood);
+      c.el.classList.remove('impatient');
+      setTag(c, stars === 3 ? 'Ngon quá!' : stars === 2 ? 'Cảm ơn nhé' : stars === 1 ? 'Ừm…' : 'Hừ!', 'mood');
+      floatText(els.pickGround, PICK_X[c.slot], pay ? `+${vnd(pay + tip)}` : '0đ', pay ? '' : 'bad');
+      const el = c.el;
+      const leave = (delay) => {
+        setTimeout(() => { el.style.transition = 'left 1.3s linear'; el.classList.add('walking'); el.style.left = '115%'; }, delay);
+        setTimeout(() => el.remove(), delay + 1400);
+      };
+      if (seat >= 0) {
+        // Sit down at a table, eat, then go.
+        S.seats[seat] = c;
+        const table = els.tables[seat < 2 ? 0 : 1];
+        setTimeout(() => {
+          setTag(c, '');
+          el.classList.add('seated', 'walking'); el.style.left = SEAT_X[seat] + '%';
+          setTimeout(() => {
+            el.classList.remove('walking');
+            const pl = document.createElement('div');
+            pl.className = 'plate'; pl.style.left = (seat % 2 ? 60 : 8) + '%'; pl.style.setProperty('--pc', DISH_COLOR[c.type]);
+            table.append(pl);
+            setTag(c, 'Măm măm…', 'mood');
+            setTimeout(() => {
+              pl.remove(); S.seats[seat] = null;
+              setTag(c, stars >= 2 ? 'No rồi!' : 'Thôi về', 'mood');
+              el.style.transition = 'left 1.3s linear, top .4s linear';
+              leave(300);
+              renderAll();
+            }, 6000);
+          }, 950);
+        }, 900);
+      } else {
+        if (form === 'plate') setTag(c, 'Hết bàn, mang về vậy', 'mood');
+        leave(900);
+      }
+      renderAll();
+    }, 700);
+  }
+
+  // A finished box rides the display line from the kitchen side to the pickup end.
+  function sendBox(c, form, no, done) {
+    const track = $('boxTrack');
+    const b = document.createElement('div');
+    b.className = 'hop' + (form === 'plate' ? ' dish' : '');
+    b.style.setProperty('--pc', DISH_COLOR[c.type]);
+    b.innerHTML = `<span class="lid"></span><span class="body"></span><span class="no">#${no}</span>`;
+    track.append(b);
+    if (reduceMotion) { setTimeout(() => { b.remove(); done(); }, 300); return; }
+    const dist = Math.max(0, track.clientWidth - 50);
+    b.animate([
+      { transform: 'translate(0, -16px)', opacity: 0 },
+      { transform: 'translate(0, 0)', opacity: 1, offset: .15 },
+      { transform: `translate(${dist}px, 0)`, opacity: 1, offset: .85 },
+      { transform: `translate(${dist}px, -26px)`, opacity: 0 },
+    ], { duration: 1500, easing: 'ease-in-out' }).onfinish = () => { b.remove(); done(); };
+  }
+
+  // ---------- Rendering ----------
+  function renderOrderZone() {
+    const c = S && S.line[0];
+    const full = S && S.pick.every(x => x);
+    els.takeBtn.disabled = !c || full;
+    els.takeBtn.textContent = !c ? 'Chờ khách…' : full ? 'Quầy lấy đầy, nấu nhanh!' : `Nhận order: ${orderText(c)} · ${c.mode === 'here' ? 'ăn tại quán' : 'mang về'}`;
+    els.takeBtn.classList.toggle('pulse', !!(S && S.tutStage === 'take' && c));
+    els.lineSub.textContent = S && S.line.length ? `${S.line.length} người đang xếp hàng` : 'Chưa có khách';
+  }
+  function renderRail() {
+    const list = S ? S.tickets.filter(t => !t.done) : [];
+    els.rail.innerHTML = list.length ? list.map(t => {
+      const c = t.c, cooking = S.cook && S.cook.t === t;
+      const pulse = S.tutStage === 'pick' && !S.cook ? ' pulse' : '';
+      return `<button class="tk${cooking ? ' cooking' : ''}${pulse}" type="button" data-no="${t.no}"><b>#${t.no}${cooking ? ' · đang nấu' : ''}</b><div>${cap(c.r.name)}</div><small>${c.extra ? '+ ' + TOP[c.extra].s.toLowerCase() + ' · ' : ''}${modeText(c)}</small><i></i></button>`;
+    }).join('') : '<span class="rail-empty">Chưa có phiếu order. Nhận order ở quầy gọi món.</span>';
+    els.rail.querySelectorAll('.tk').forEach(b => b.onclick = () => startCook(+b.dataset.no));
+    renderRailBars();
+  }
+  function renderRailBars() {
+    els.rail.querySelectorAll('.tk').forEach(b => {
+      const t = S.tickets.find(x => x.no === +b.dataset.no);
+      if (!t) return;
+      const f = t.c.isTut ? 1 : clamp(t.c.patience / t.c.pmax);
+      const i = b.querySelector('i');
+      i.style.width = f * 100 + '%'; i.style.background = f > .5 ? 'var(--good)' : f > .25 ? 'var(--gold)' : 'var(--bad)';
+    });
+  }
+  function renderPickup() {
+    const n = S ? S.pick.filter(Boolean).length : 0;
+    els.pickSub.textContent = `${n}/${PICK_MAX}`;
+  }
+  function renderIdleKitchen() {
+    if (S && S.cook) return;
+    setStep(-1); drawPot();
+    els.nowTitle.textContent = 'Bếp đang trống';
+    els.kitchenSub.textContent = '';
+    const r = S && S.last;
+    const res = r ? `<div class="result">
+        <div><b>Phiếu #${r.no} · ${cap(r.name)}</b> <span class="stars">${[0,1,2].map(i => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span></div>
+        ${r.gone ? '<div class="ok" style="color:var(--bad)">Khách đã bỏ đi, gói xôi không ai lấy.</div>' : r.notes.length ? `<ul>${r.notes.map(n => `<li>${n}</li>`).join('')}</ul>` : '<div class="ok">Chuẩn vị xôi Bắc từ gạo đến lá gói.</div>'}
+      </div>` : '';
+    const tutMsg = S && S.tutStage === 'take'
+      ? coach(true, 'Khu 1 · Quầy gọi món', '<p>Cô giáo đang đứng ở quầy gọi món. Bấm nút vàng <em>Nhận order</em> để ghi phiếu. Cô sẽ sang <em>quầy lấy xôi</em> đứng chờ.</p>')
+      : S && S.tutStage === 'pick'
+      ? coach(true, 'Khu 2 · Bếp nấu xôi', '<p>Phiếu order đã treo lên thanh phía trên. Bấm vào <em>phiếu #1</em> để bắt đầu nấu.</p>')
+      : S && S.tutStage === 'after'
+      ? coach(true, 'Khu 3 · Lấy xôi và bàn ăn', '<p>Đĩa xôi đã ra quầy, cô giáo lấy rồi ngồi vào bàn ăn. Khách mang về thì cầm gói lá đi luôn, tài xế công nghệ đến lấy đơn app cũng mang về. Từ giờ khách đến liên tục, ưu tiên phiếu có thanh kiên nhẫn sắp đỏ.</p>')
+      : '';
+    const waiting = S ? S.tickets.filter(t => !t.done).length : 0;
+    els.controls.innerHTML = tutMsg + res + (tutMsg ? '' : `<p class="hint">${waiting ? `Có <strong>${waiting} phiếu</strong> đang chờ. Bấm vào một phiếu trên thanh để nấu.` : 'Chưa có phiếu nào. Nhận order ở <strong>quầy gọi món</strong>.'}</p>`);
+  }
+  function renderAll() { renderOrderZone(); renderRail(); renderPickup(); renderIdleKitchen(); renderRecipe(); els.count.textContent = `${S ? S.done : 0}/${TOTAL}`; }
+
+  // ---------- Trays and the ladle animation ----------
+  const potBox = $('potBox');
+  let reduceMotion = false;
+  try { reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  function trayBtn(key, d, hl, tagText) {
+    return `<button class="ing tray${hl ? ' pulse' : ''}" type="button" data-k="${key}">${hl ? `<span class="tag2">${tagText}</span>` : ''}<span class="tray-dish" data-tex="${d.tex}" style="--c:${d.c}"><i></i></span>${d.s}<span class="n"></span></button>`;
+  }
+  function station(title, html) { return `<div class="station"><h4>${title}</h4><div class="trays">${html}</div></div>`; }
+  // A ladle scoops from a tray, arcs over and tips into the pot (or lifts back out when back = true).
+  function scoop(fromEl, color, back, done) {
+    if (reduceMotion || !fromEl) { done && done(); return; }
+    const a = fromEl.getBoundingClientRect(), pr = potBox.getBoundingClientRect();
+    const tray = { x: a.left + a.width / 2, y: a.top + a.height * .35 };
+    const pot = { x: pr.left + pr.width * .5, y: pr.top + pr.height * .3 };
+    const [p0, p1] = back ? [pot, tray] : [tray, pot];
+    const el = document.createElement('div');
+    el.className = 'scoop'; el.style.setProperty('--c', color);
+    el.innerHTML = '<span class="handle"></span><span class="bowl"></span>';
+    document.body.append(el);
+    const dx = p1.x - p0.x, dy = p1.y - p0.y, lift = Math.min(90, Math.abs(dx) * .25 + 45);
+    const at = (x, y, r) => `translate(${x - 12}px, ${y - 18}px) rotate(${r}deg)`;
+    const anim = el.animate([
+      { transform: at(p0.x, p0.y + 6, 10), opacity: 0 },
+      { transform: at(p0.x, p0.y - 6, 0), opacity: 1, offset: .12 },
+      { transform: at(p0.x + dx * .5, p0.y + dy * .5 - lift, -6), offset: .5 },
+      { transform: at(p1.x, p1.y - 4, 0), offset: .78 },
+      { transform: at(p1.x, p1.y, back ? 0 : -80), opacity: 1 },
+    ], { duration: 680, easing: 'ease-in-out' });
+    anim.onfinish = () => {
+      el.remove();
+      if (!back) {
+        for (let i = 0; i < 6; i++) {
+          const c = document.createElement('span');
+          c.className = 'crumb'; c.style.background = color;
+          c.style.left = (p1.x - 14 + i * 5) + 'px'; c.style.top = (p1.y + 2) + 'px';
+          document.body.append(c);
+          c.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${14 + (i % 3) * 5}px)`, opacity: 0 }], { duration: 380 + i * 30, easing: 'ease-in' }).onfinish = () => c.remove();
+        }
+        potBox.classList.remove('plop'); void potBox.offsetWidth; potBox.classList.add('plop');
+        beep(320, .06, 'sine', .06);
+      }
+      done && done();
+    };
+  }
+  function stirAnim() {
+    if (reduceMotion) return;
+    const pd = document.createElement('span'); pd.className = 'paddle';
+    potBox.append(pd); setTimeout(() => pd.remove(), 1200);
+  }
+
+  // ---------- Recipe card (bottom-right) ----------
+  const recipeEl = $('recipe');
+  let recipeKey = '', recipeMin = false;
+  try { recipeMin = matchMedia('(max-width: 899px)').matches; } catch (e) {}
+  recipeEl.classList.toggle('min', recipeMin);
+  function renderRecipe() {
+    const k = S && S.cook;
+    const waiting = S ? S.tickets.filter(t => !t.done && !(k && k.t === t)) : [];
+    const key = (k ? [k.t.no, k.stage, k.mix.join(), k.served.join(), k.stirred].join('|') : 'idle') + recipeMin + waiting.map(t => t.no).join();
+    if (key === recipeKey) return;
+    recipeKey = key;
+    const btn = `<button type="button" id="rcToggle">${recipeMin ? 'Mở' : 'Thu gọn'}</button>`;
+    // One-line recipes for the other tickets still waiting.
+    const one = (c) => `${c.r.need.filter(x => x !== 'nep').map(x => ING[x].s).join(', ')}${c.r.tops.length || c.extra ? ' · bày ' + c.r.tops.concat(c.extra ? [c.extra] : []).map(x => TOP[x].s).join(' → ') : ''} · ${c.mode === 'here' ? 'bày đĩa' : 'gói lá'}`;
+    const queue = waiting.length ? `<div class="rc-queue"><b>Phiếu đang chờ</b>${waiting.map(t => `<div><b>#${t.no} ${cap(t.c.r.name)}</b>: ${one(t.c)}</div>`).join('')}</div>` : '';
+    if (!k) {
+      recipeEl.innerHTML = `<div class="rc-head"><div class="t">Bảng công thức<small>Chưa nấu phiếu nào</small></div>${btn}</div>
+        <div class="rc-body"><p class="rc-empty" style="margin:0">Bấm một phiếu trên thanh, công thức của món đó sẽ hiện ở đây.</p>${queue}</div>`;
+    } else {
+      const c = k.t.c, step = { soak: 0, mix: 1, steam: 2, serve: 3 }[k.stage];
+      const cls = (i) => i < step ? 'done' : i === step ? 'now' : '';
+      const need = c.r.need.filter(x => x !== 'nep');
+      const target = c.r.tops.concat(c.extra ? [c.extra] : []);
+      const chip = (label, ok) => `<span class="${ok ? 'ok' : ''}">${label}</span>`;
+      const short = [
+        'Ngâm nếp 6 đến 8 tiếng',
+        'Trộn: ' + need.map(x => ING[x].s).join(', '),
+        'Xới ở vạch vàng, bắc ở vùng xanh',
+        (target.length ? target.map(x => TOP[x].s).join(' → ') + ' · ' : '') + (c.mode === 'here' ? 'Bày đĩa' : 'Gói lá'),
+      ][step];
+      recipeEl.innerHTML = `<div class="rc-head"><div class="t">#${k.t.no} · ${cap(c.r.name)}<small>${recipeMin ? short : modeText(c)}</small></div>${btn}</div>
+        <div class="rc-body"><ol>
+          <li class="${cls(0)}"><b>1. Ngâm gạo nếp</b><br>6 đến 8 tiếng cho hạt nở mềm</li>
+          <li class="${cls(1)}"><b>2. Trộn với nếp</b><div class="chips">${need.map(x => chip(ING[x].s, k.mix.includes(x))).join('')}</div></li>
+          <li class="${cls(2)}"><b>3. Đồ xôi</b><br>Xới ở vạch vàng${k.stirred ? ' (đã xới)' : ''}, bắc chõ ở vùng xanh</li>
+          <li class="${cls(3)}"><b>4. ${c.r.tops.length ? 'Bày theo thứ tự' : 'Ăn kèm'}</b>
+            <div class="chips">${target.length ? target.map((x, i) => chip((c.r.tops.includes(x) ? (i + 1) + '. ' : '+ ') + TOP[x].s, k.served.includes(x))).join('') : '<span>Không thêm gì</span>'}</div>
+            <div class="rc-mode">${c.mode === 'here' ? 'Bày đĩa · ăn tại quán' : 'Gói lá · mang về'}</div></li>
+        </ol>${queue}</div>`;
+    }
+    $('rcToggle').onclick = () => { recipeMin = !recipeMin; recipeEl.classList.toggle('min', recipeMin); renderRecipe(); };
+  }
+
+  // ---------- Chõ drawing ----------
+  function drawPot() {
+    const k = S && S.cook, inPot = k ? k.mix : [];
+    let color = '#f6efdc';
+    if (inPot.includes('gac')) color = '#d8402f';
+    else if (inPot.includes('nghe')) color = '#f2bf36';
+    else if (inPot.includes('ladua')) color = '#7fbf6a';
+    else if (inPot.includes('doxanh')) color = '#f2df9a';
+    const hasRice = inPot.includes('nep');
+    els.rice.setAttribute('fill', hasRice ? color : '#3c4649');
+    els.grain.style.opacity = hasRice ? 1 - k.done * .6 : 0;
+    els.gloss.setAttribute('opacity', hasRice ? clamp(k.done * .9) : 0);
+    els.gloss.setAttribute('opacity', k ? clamp(k.done * .9) : 0);
+    let b = '';
+    const speck = (fill, n, r) => {
+      for (let i = 0; i < n; i++) {
+        const a = (i * 137.5) * Math.PI / 180, d = Math.sqrt((i + .5) / n);
+        b += `<ellipse cx="${100 + Math.cos(a) * d * 56}" cy="${70 + Math.sin(a) * d * 12}" rx="${r}" ry="${r * .7}" fill="${fill}"/>`;
+      }
+    };
+    if (inPot.includes('lac')) speck('#9b5e36', 22, 3);
+    if (inPot.includes('doxanh') && !inPot.includes('nghe')) speck('#e2b52f', 26, 2.2);
+    els.bits.innerHTML = hasRice ? b : '';
+    let t = '';
+    (k ? k.served : []).forEach((key) => {
+      const c = TOP[key].c;
+      if (key === 'donghien') t += `<ellipse cx="100" cy="66" rx="34" ry="8" fill="${c}"/><path d="M70 66h60M76 62h48M78 70h44" stroke="#d9b94d" stroke-width="1.2"/>`;
+      else if (key === 'mohanh') t += `<ellipse cx="100" cy="66" rx="40" ry="9" fill="#f3e3a0" opacity=".45"/>` + Array.from({ length: 14 }, (_, j) => `<circle cx="${68 + (j * 23) % 64}" cy="${60 + (j * 7) % 12}" r="2" fill="${c}"/>`).join('');
+      else if (key === 'hanhphi') t += Array.from({ length: 18 }, (_, j) => `<path d="M${72 + (j * 29) % 56} ${60 + (j * 5) % 12}q3 -3 6 0" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`).join('');
+      else t += Array.from({ length: 24 }, (_, j) => `<circle cx="${64 + (j * 31) % 72}" cy="${58 + (j * 11) % 16}" r="${key === 'ruoc' ? 2.2 : 1.5}" fill="${c}"/>`).join('');
+    });
+    els.tops.innerHTML = t;
+    els.steam.classList.toggle('on', !!(k && k.stage === 'steam'));
+    renderRecipe();
+  }
+
+  // ---------- Kitchen ----------
+  function startCook(no) {
+    if (S.cook) { toast('Nấu xong phiếu đang làm đã', 'bad'); return; }
+    const t = S.tickets.find(x => x.no === no);
+    if (!t) return;
+    beep(500);
+    S.cook = { t, stage: 'soak', mix: [], served: [], done: 0, stirred: false, stirMissed: false, notes: [] };
+    if (S.tutStage === 'pick') S.tutStage = 'cooking';
+    els.nowTitle.innerHTML = `Phiếu #${t.no}: ${cap(t.c.r.name)}<small>${t.c.extra ? `Thêm ${TOP[t.c.extra].s.toLowerCase()} · ` : ''}${modeText(t.c)}</small>`;
+    els.kitchenSub.textContent = `Đang nấu phiếu #${t.no}`;
+    renderRail();
+    startSoak();
+  }
+
+  function startSoak() {
+    const k = S.cook; k.stage = 'soak'; setStep(0); drawPot();
+    const speed = tut() ? 2.6 : 7 + S.done * 1.1;
+    let h = 0, dir = 1;
+    els.controls.innerHTML = `
+      ${coach(tut(), 'Bước 1 · Ngâm gạo nếp', '<p>Nếp cái hoa vàng ngâm <em>6 đến 8 tiếng</em> cho hạt nở mềm. Đợi kim vào <em>vùng xanh</em> rồi bấm <em>Vớt gạo</em>.</p>')}
+      ${tut() ? '' : '<p class="hint">Bấm <strong>Vớt gạo</strong> khi kim trong vùng <strong>6 đến 8 tiếng</strong>.</p>'}
+      <div class="soak-row">
+        <div class="ing tray basin" id="basin"><span class="tray-dish" data-tex="liquid" style="--c:#cfe6ee"><i></i></span>Chậu ngâm nếp</div>
+        <div class="soak-gauge">
+          <div class="gauge"><div class="zn" style="left:50%;width:16.67%"></div><div class="needle" id="needle"></div></div>
+          <div class="scale"><span>0 giờ</span><span>3</span><span>6</span><span>9</span><span>12 giờ</span></div>
+          <div class="readout" id="hours">0 tiếng</div>
+        </div>
+      </div>
+      <div class="row"><button class="btn" id="go" type="button">Vớt gạo</button></div>`;
+    const needle = $('needle'), hours = $('hours');
+    S.stageTick = (dt) => {
+      h += dir * speed * dt;
+      if (h >= 12) { h = 12; dir = -1; } if (h <= 0) { h = 0; dir = 1; }
+      needle.style.left = (h / 12 * 100) + '%';
+      hours.textContent = h.toFixed(1).replace('.', ',') + ' tiếng';
+    };
+    $('go').onclick = () => {
+      S.stageTick = null;
+      const out = h < 6 ? 6 - h : h > 8 ? h - 8 : 0;
+      k.qSoak = clamp(1 - out / 3.5);
+      if (!out) { good(); toast('Gạo nở vừa, hạt mẩy', 'good'); }
+      else { bad(); toast(h < 6 ? 'Ngâm non, hạt còn cứng' : 'Ngâm lâu quá, gạo bở', 'bad'); k.notes.push(h < 6 ? 'Gạo ngâm chưa đủ' : 'Gạo ngâm quá lâu'); }
+      $('go').disabled = true;
+      scoop($('basin'), '#f6efdc', false, () => { k.mix = ['nep']; drawPot(); setTimeout(startMix, 250); });
+    };
+  }
+
+  function startMix() {
+    const k = S.cook, c = k.t.c; k.stage = 'mix'; setStep(1); drawPot();
+    const keys = Object.keys(ING).filter(x => x !== 'nep');
+    const need = c.r.need.filter(x => x !== 'nep');
+    els.controls.innerHTML = `
+      ${coach(tut(), 'Bước 2 · Trộn nguyên liệu', '<p>Xôi xéo cần nếp nhuộm <em>nghệ</em> và một nhúm <em>muối</em>. Bấm 2 ô có nhãn “Cần” rồi bấm <em>Lên chõ đồ</em>. Cốt dừa, lá dứa là đồ xôi miền Nam.</p>')}
+      ${tut() ? '' : `<p class="hint">Chọn nguyên liệu cho <strong>${c.r.name}</strong>. Bấm lần nữa để bỏ ra.</p>`}
+      ${station('Nguyên liệu', keys.filter(x => ING[x].g === 'main').map(x => trayBtn(x, ING[x], tut() && need.includes(x), 'Cần')).join(''))}
+      ${station('Gia vị', keys.filter(x => ING[x].g === 'spice').map(x => trayBtn(x, ING[x], tut() && need.includes(x), 'Cần')).join(''))}
+      <div class="row"><button class="btn" id="go" type="button">Lên chõ đồ</button></div>`;
+    els.controls.querySelectorAll('.ing').forEach(b => b.onclick = () => {
+      const key = b.dataset.k, i = k.mix.indexOf(key);
+      if (i >= 0) { k.mix.splice(i, 1); b.classList.remove('in'); b.querySelector('.n').textContent = ''; beep(300); drawPot(); scoop(b, ING[key].c, true); }
+      else { k.mix.push(key); b.classList.add('in'); b.classList.remove('pulse'); b.querySelector('.n').textContent = '✓'; beep(560); scoop(b, ING[key].c, false, drawPot); }
+    });
+    $('go').onclick = () => {
+      const missing = need.filter(x => !k.mix.includes(x));
+      const wrong = k.mix.filter(x => !c.r.need.includes(x));
+      k.qMix = clamp(1 - missing.length * .34 - wrong.length * .25);
+      missing.forEach(x => k.notes.push(`Thiếu ${ING[x].s.toLowerCase()}`));
+      wrong.forEach(x => k.notes.push(ING[x].decoy || `Không cần cho ${ING[x].s.toLowerCase()} vào ${c.r.name}`));
+      if (!missing.length && !wrong.length) { good(); toast('Trộn chuẩn vị', 'good'); } else { bad(); toast('Hình như chưa đúng công thức', 'bad'); }
+      setTimeout(startSteam, 400);
+    };
+  }
+
+  function startSteam() {
+    const k = S.cook; k.stage = 'steam'; setStep(2); k.done = 0; drawPot();
+    const rate = tut() ? .07 : .17 + S.done * .008;
+    els.controls.innerHTML = `
+      ${coach(tut(), 'Bước 3 · Đồ xôi', '<ol><li>Kim đi dần từ sống đến chín.</li><li>Kim vào <em>vạch vàng</em>: bấm <em>Xới xôi</em> cho hạt chín đều.</li><li>Kim vào <em>vùng xanh</em>: bấm <em>Bắc chõ</em>. Sang vùng đỏ là khê.</li></ol>')}
+      ${tut() ? '' : '<p class="hint">Vạch vàng: <strong>Xới xôi</strong>. Vùng xanh: <strong>Bắc chõ</strong>.</p>'}
+      <div class="gauge"><div class="fill" id="fill"></div>
+        <div class="zn stir" style="left:42%;width:18%"></div><div class="zn" style="left:80%;width:13%"></div><div class="zn warn" style="left:93%;width:7%"></div>
+        <div class="needle" id="needle"></div></div>
+      <div class="scale"><span>Sống</span><span>Xới</span><span>Chín dẻo</span><span>Khê</span></div>
+      <div class="readout" id="state">Đang đồ…</div>
+      <div class="row"><button class="btn yellow" id="stir" type="button">Xới xôi</button><button class="btn" id="go" type="button">Bắc chõ</button></div>`;
+    const needle = $('needle'), fill = $('fill'), st = $('state'), stir = $('stir');
+    S.stageTick = (dt) => {
+      k.done = Math.min(1.05, k.done + rate * dt);
+      needle.style.left = Math.min(100, k.done * 100) + '%';
+      fill.style.width = Math.min(100, k.done * 100) + '%';
+      st.textContent = k.done < .42 ? 'Hạt còn sống' : k.done < .6 ? (k.stirred ? 'Đã xới, đồ tiếp' : 'Xới đi!') : k.done < .8 ? 'Sắp chín' : k.done < .93 ? 'Chín dẻo, thơm rồi!' : 'Sắp khê!';
+      if (k.done >= .6 && !k.stirred && !k.stirMissed) { k.stirMissed = true; stir.disabled = true; toast('Quên xới, xôi chín không đều', 'bad'); bad(); }
+      drawPot();
+      if (k.done >= 1.05) finishSteam();
+    };
+    stir.onclick = () => {
+      stirAnim();
+      if (k.done >= .42 && k.done < .6) { k.stirred = true; stir.disabled = true; good(); toast('Xới tơi, rưới chút nước', 'good'); }
+      else { bad(); toast(k.done < .42 ? 'Chưa đến lúc xới' : 'Muộn rồi'); }
+    };
+    $('go').onclick = finishSteam;
+  }
+  function finishSteam() {
+    const k = S.cook; S.stageTick = null;
+    const d = k.done;
+    let q = d >= .8 && d <= .93 ? 1 : d < .8 ? clamp(1 - (.8 - d) / .3) : clamp(1 - (d - .93) / .12);
+    if (!k.stirred) { q *= .65; k.notes.push('Chưa xới xôi giữa chừng'); }
+    k.qSteam = q;
+    if (d < .8) { k.notes.push('Xôi còn sống hạt'); bad(); toast('Xôi chưa chín', 'bad'); }
+    else if (d > .93) { k.notes.push('Xôi bị khê đáy'); bad(); toast('Khét đáy rồi!', 'bad'); }
+    else { good(); toast('Xôi dẻo, bóng hạt', 'good'); }
+    k.stage = 'serve';
+    setTimeout(startServe, 400);
+  }
+
+  function startServe() {
+    const k = S.cook, c = k.t.c; setStep(3); drawPot();
+    const keys = Object.keys(TOP);
+    const target = c.r.tops.concat(c.extra ? [c.extra] : []);
+    const want = c.r.tops.length ? `Bày phần ăn kèm cho ${c.r.name} đúng thứ tự.` : `${cap(c.r.name)} ăn mộc, chỉ thêm thứ khách dặn.`;
+    els.controls.innerHTML = `
+      ${coach(tut(), 'Bước 4 · Bày ra đĩa hoặc gói mang về', '<p>Xôi xéo bày theo thứ tự <em>1. đỗ nắm thái</em>, <em>2. hành phi</em>, <em>3. mỡ hành</em>. Cô giáo <em>ăn tại quán</em>, nên bấm <em>Bày đĩa</em>. Khách mang về thì bấm <em>Gói lá</em>.</p>')}
+      ${tut() ? '' : `<p class="hint">${want} Khách dặn: <strong>${c.extra ? TOP[c.extra].s : 'không thêm gì'}</strong> · <strong>${modeText(c)}</strong>.</p>`}
+      ${station('Đồ ăn kèm', keys.map(x => { const i = target.indexOf(x); return trayBtn(x, TOP[x], tut() && i >= 0, i + 1); }).join(''))}
+      <div class="row"><button class="btn ghost" id="undo" type="button" style="flex:.6">Gạt lại</button><button class="btn yellow${tut() ? ' pulse' : ''}" id="plate" type="button">Bày đĩa · ăn tại quán</button><button class="btn" id="wrap" type="button">Gói lá · mang về</button></div>`;
+    const sync = (pot = true) => {
+      els.controls.querySelectorAll('.ing').forEach(b => {
+        const i = k.served.indexOf(b.dataset.k);
+        b.classList.toggle('in', i >= 0); if (i >= 0) b.classList.remove('pulse');
+        b.querySelector('.n').textContent = i >= 0 ? (i + 1) : '';
+      });
+      if (pot) drawPot();
+    };
+    els.controls.querySelectorAll('.ing').forEach(b => b.onclick = () => {
+      if (!k.served.includes(b.dataset.k)) { k.served.push(b.dataset.k); beep(600); sync(false); scoop(b, TOP[b.dataset.k].c, false, drawPot); }
+    });
+    $('undo').onclick = () => { k.served = []; beep(300); sync(); };
+    const done = (form) => {
+      k.form = form;
+      if ((form === 'plate') !== (c.mode === 'here')) k.notes.push(c.mode === 'here' ? 'Khách ăn tại quán, phải bày ra đĩa' : 'Khách mang về, phải gói lá');
+      const baseSeq = k.served.filter(x => c.r.tops.includes(x));
+      const missing = target.filter(x => !k.served.includes(x));
+      const wrong = k.served.filter(x => !target.includes(x));
+      const orderOk = baseSeq.join() === c.r.tops.filter(x => baseSeq.includes(x)).join();
+      k.qServe = clamp(1 - missing.length * .3 - wrong.length * .25 - (orderOk ? 0 : .3) - ((form === 'plate') !== (c.mode === 'here') ? .35 : 0));
+      missing.forEach(x => k.notes.push(`Quên ${TOP[x].s.toLowerCase()}`));
+      wrong.forEach(x => k.notes.push(TOP[x].decoy || `Khách không gọi ${TOP[x].s.toLowerCase()}`));
+      if (!orderOk) k.notes.push('Xôi xéo bày: đỗ trước, hành phi, rồi mỡ hành');
+      finishCook();
+    };
+    $('plate').onclick = () => done('plate');
+    $('wrap').onclick = () => done('wrap');
+  }
+
+  function finishCook() {
+    const k = S.cook, t = k.t, c = t.c;
+    const q = (k.qSoak + k.qMix + k.qSteam + k.qServe) / 4;
+    const stars = q >= .86 ? 3 : q >= .62 ? 2 : q >= .35 ? 1 : 0;
+    const gone = c.state !== 'waiting';
+    const pf = c.isTut ? 1 : clamp(c.patience / c.pmax);
+    const pay = gone || !stars ? 0 : Math.round(c.r.price * (.5 + .5 * q));
+    const tip = !gone && stars === 3 && pf > .4 ? 5 : 0;
+    t.done = true;
+    S.tickets = S.tickets.filter(x => x !== t);
+    S.last = { no: t.no, name: c.r.name, stars, notes: k.notes, gone };
+    S.cook = null; S.stageTick = null;
+    if (!gone) {
+      S.money += pay + tip; S.stars += stars; if (stars) S.served++;
+      els.money.textContent = vnd(S.money);
+      sendBox(c, k.form, t.no, () => deliver(c, stars, pay, tip, k.form));
+    } else bad();
+    if (c.isTut) S.tutStage = 'after';
+    else if (S.tutStage === 'after') S.tutStage = null;
+    renderAll();
+  }
+
+  function endDay() {
+    stopLoop();
+    const isBest = S.money > best;
+    if (isBest) { best = S.money; try { localStorage.setItem('xoi-best', best); } catch (e) {} }
+    const title = S.stars >= TOTAL * 3 - 4 ? 'Quán đắt hàng nhất phố' : S.stars >= TOTAL * 2 ? 'Một buổi sáng đắt hàng' : 'Mai cố lên nhé';
+    showCard(title, `
+      <p>Bán được <b>${S.served}/${TOTAL}</b> gói, ${S.stars}/${TOTAL * 3} sao. ${S.lost ? `${S.lost} khách bỏ đi vì chờ lâu.` : 'Không khách nào phải bỏ đi.'}</p>
+      <div class="pay">Thu về ${vnd(S.money)}</div>
+      <p>${isBest ? 'Kỷ lục mới của quán!' : `Kỷ lục: ${vnd(best)}`}</p>
+      <button class="btn" type="button" id="again">Mở hàng buổi nữa</button>`);
+    $('again').onclick = () => newDay(false);
+  }
+
+  // ---------- Overlays ----------
+  function showCard(title, html) {
+    els.overlay.innerHTML = `<div class="card" role="dialog" aria-label="${title}"><div class="head"><h2>${title}</h2></div>${html}</div>`;
+    els.overlay.hidden = false;
+  }
+  function hideCard() { els.overlay.innerHTML = ''; els.overlay.hidden = true; }
+
+  const GUIDE = `
+    <h3>Quán có 3 khu</h3>
+    <div class="zones3">
+      <div><b>1 · Gọi món</b>Khách xếp hàng ở quầy. Bấm <b>Nhận order</b> để ghi phiếu.</div>
+      <div><b>2 · Bếp</b>Bấm một phiếu trên thanh để nấu qua 4 bước.</div>
+      <div><b>3 · Lấy xôi, bàn ăn</b>Khách cầm số phiếu đứng chờ, lấy xôi rồi ngồi ăn hoặc mang về.</div>
+    </div>
+    <h3>Nấu một gói xôi</h3>
+    <ol class="guide">
+      <li><div><b>Ngâm gạo.</b> Bấm <b>Vớt gạo</b> khi kim ở vùng xanh 6 đến 8 tiếng.</div></li>
+      <li><div><b>Trộn.</b> Chọn đúng nguyên liệu của món, rồi <b>Lên chõ đồ</b>. Cốt dừa, lá dứa là bẫy.</div></li>
+      <li><div><b>Đồ xôi.</b> Vạch vàng bấm <b>Xới xôi</b>, vùng xanh bấm <b>Bắc chõ</b>.</div></li>
+      <li><div><b>Bày hoặc gói.</b> Thêm đồ ăn kèm đúng món và lời dặn. Khách ăn tại quán bấm <b>Bày đĩa</b>, khách mang về bấm <b>Gói lá</b>.</div></li>
+    </ol>
+    <h3>Sổ công thức</h3>
+    <div class="recipes">
+      <div><b>Xôi gấc · 20k</b>Gấc chín, rượu trắng, đường, muối. Không ăn kèm.</div>
+      <div><b>Xôi xéo · 25k</b>Nghệ, muối. Bày: đỗ nắm thái, hành phi, mỡ hành. Có khách thêm ruốc.</div>
+      <div><b>Xôi lạc · 15k</b>Lạc, muối. Khách hay dặn thêm muối vừng.</div>
+      <div><b>Xôi đỗ xanh · 15k</b>Đỗ xanh, muối. Khách hay dặn thêm muối vừng.</div>
+    </div>
+    <h3>Mẹo</h3>
+    <ul>
+      <li>Thanh màu dưới chân khách và dưới mỗi phiếu là độ kiên nhẫn. Hết là khách bỏ đi.</li>
+      <li>Quầy lấy chỉ có 3 chỗ. Đầy thì không nhận thêm order được, phải nấu cho kịp.</li>
+      <li>Tài xế công nghệ lấy đơn app, luôn mang về và vội hơn khách thường.</li>
+      <li>Thẻ <b>công thức</b> ở góc phải dưới bếp luôn ghi cách làm món đang nấu và đánh dấu những gì bạn đã cho vào.</li>
+      <li>Có 2 bàn, 4 ghế. Hết ghế thì khách ăn tại quán đành mang về.</li>
+      <li>3 sao khi khách còn hơn nửa kiên nhẫn sẽ được boa 5.000đ.</li>
+    </ul>`;
+
+  $('guideBtn').onclick = () => {
+    if ($('close')) return;
+    const wasOpen = !els.overlay.hidden, prev = els.overlay.innerHTML;
+    if (S) S.paused = true;
+    showCard('Hướng dẫn', GUIDE + `<button class="btn alt" type="button" id="close">${S && raf ? 'Quay lại bán tiếp' : 'Đóng'}</button>`);
+    $('close').onclick = () => {
+      if (S) S.paused = false;
+      if (wasOpen) { els.overlay.innerHTML = prev; bindIntro(); const a = $('again'); if (a) a.onclick = () => newDay(false); }
+      else hideCard();
+    };
+  };
+
+  function bindIntro() {
+    const s = $('start'), t = $('learn');
+    if (s) s.onclick = () => { beep(500); newDay(false); };
+    if (t) t.onclick = () => { beep(500); newDay(true); };
+  }
+  // ---------- Traffic on the road ----------
+  function vehSVG(type) {
+    const tire = (x) => `<circle cx="${x}" cy="50" r="9" fill="#1d1d1f"/><circle cx="${x}" cy="50" r="3.5" fill="#9aa1a7"/>`;
+    const helm = rand(['#d63b2c', '#1f5fa8', '#f6c21a', '#ffffff', '#1f9d55']);
+    const shirt = rand(['#3c7fd6', '#e0603a', '#4f6b3f', '#8a5a9e', '#2b2b33']);
+    if (type === 'moto') return `<svg viewBox="0 0 100 62">${tire(18)}${tire(80)}
+      <path d="M18 50 L34 34 L66 34 L80 50" stroke="#555" stroke-width="3" fill="none"/>
+      <path d="M30 36 Q50 26 70 36 L66 44 L34 44Z" fill="${rand(['#c0392b', '#2c3e50', '#7f8c8d', '#e67e22'])}"/>
+      <rect x="70" y="24" width="4" height="14" fill="#555"/><circle cx="76" cy="30" r="3" fill="#ffe08a"/>
+      <rect x="40" y="10" width="14" height="22" rx="5" fill="${shirt}"/><path d="M52 16 L70 26" stroke="${shirt}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M42 30 L56 40 L54 50" stroke="#2b2b33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <circle cx="48" cy="5" r="7" fill="${helm}"/><rect x="50" y="3" width="6" height="4" fill="#333" opacity=".6"/></svg>`;
+    if (type === 'bike') return `<svg viewBox="0 0 100 62">
+      <circle cx="20" cy="48" r="11" fill="none" stroke="#333" stroke-width="2.5"/><circle cx="78" cy="48" r="11" fill="none" stroke="#333" stroke-width="2.5"/>
+      <path d="M20 48 L42 32 L66 32 L78 48 M42 32 L50 48 L66 32" stroke="#2a7a5a" stroke-width="2.5" fill="none"/>
+      <rect x="2" y="26" width="26" height="12" rx="3" fill="#a9824a"/><circle cx="8" cy="24" r="4" fill="#e85d75"/><circle cx="15" cy="22" r="4" fill="#f6c21a"/><circle cx="22" cy="24" r="4" fill="#e85d75"/>
+      <rect x="40" y="10" width="13" height="20" rx="5" fill="${shirt}"/><path d="M50 16 L66 30" stroke="${shirt}" stroke-width="4" stroke-linecap="round"/>
+      <path d="M43 28 L52 40" stroke="#2b2b33" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="46" cy="6" r="5" fill="#e1bf98"/><path d="M33 7 L46 -4 L59 7Z" fill="#e9cf8a"/></svg>`;
+    if (type === 'cargo') return `<svg viewBox="0 0 100 62">${tire(18)}${tire(80)}
+      <path d="M18 50 L34 36 L66 36 L80 50" stroke="#555" stroke-width="3" fill="none"/>
+      <rect x="2" y="14" width="34" height="26" fill="#c9a061"/><rect x="2" y="2" width="28" height="14" fill="#b5884a"/><path d="M2 26 L36 26 M19 14 L19 40" stroke="#8d6e4a" stroke-width="1.5"/>
+      <path d="M34 38 Q52 30 70 38 L66 44 L36 44Z" fill="#34495e"/>
+      <rect x="44" y="14" width="13" height="20" rx="5" fill="${shirt}"/><path d="M55 20 L70 28" stroke="${shirt}" stroke-width="5" stroke-linecap="round"/>
+      <path d="M46 32 L58 42" stroke="#2b2b33" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="51" cy="9" r="7" fill="${helm}"/></svg>`;
+    return `<svg viewBox="0 0 150 62">${tire(30)}${tire(118)}
+      <path d="M6 48 L6 32 Q10 26 30 24 L46 10 Q70 4 98 10 L118 24 Q142 26 146 34 L146 48Z" fill="${rand(['#e8e8e8', '#c0392b', '#2c3e50', '#1f5fa8'])}"/>
+      <path d="M52 13 L94 13 L110 24 L50 24Z" fill="#9fc6dc"/><path d="M74 12 L74 24" stroke="#555" stroke-width="2"/>
+      <circle cx="143" cy="36" r="3" fill="#ffe08a"/></svg>`;
+  }
+  const road = $('road');
+  function spawnVehicle() {
+    if (reduceMotion) return;
+    if (!document.hidden && road.clientWidth) {
+      const type = rand(['moto', 'moto', 'moto', 'bike', 'cargo', 'car']);
+      const far = Math.random() < .5;
+      const v = document.createElement('div');
+      v.className = 'veh' + (far ? ' far' : '');
+      v.innerHTML = vehSVG(type);
+      road.append(v);
+      const w = road.clientWidth, vw = v.offsetWidth || 60;
+      const speed = { moto: 140, bike: 60, cargo: 110, car: 170 }[type] * (.85 + Math.random() * .3);
+      // Far lane drives left to right, near lane right to left (mirrored).
+      const from = far ? -vw - 10 : w + 10, to = far ? w + 10 : -vw - 10;
+      const flip = far ? '' : ' scaleX(-1)';
+      v.animate([{ transform: `translateX(${from}px)${flip}` }, { transform: `translateX(${to}px)${flip}` }],
+        { duration: (w + vw + 20) / speed * 1000, easing: 'linear' }).onfinish = () => v.remove();
+    }
+    setTimeout(spawnVehicle, 900 + Math.random() * 2600);
+  }
+
+  function intro() {
+    S = null; renderAll(); drawPot();
+    // A few regulars on the sidewalk behind the intro card.
+    [[PEOPLE[2], 56, els.orderGround], [PEOPLE[4], 33, els.orderGround], [DRIVER, 50, els.pickGround]].forEach(([p, x, g]) => {
+      const w = document.createElement('div'); w.className = 'walker tut'; w.style.left = x + '%';
+      w.innerHTML = charSVG(p, 'happy'); g.append(w);
+    });
+    showCard('Quán Xôi Hà Nội', `
+      <p>Bạn vừa nhận quán xôi trên phố Hàng Xôi. Quán chia làm 3 khu, buổi sáng có ${TOTAL} khách ghé.</p>
+      <div class="zones3">
+        <div><b>1 · Gọi món</b>Khách xếp hàng, bạn nhận order.</div>
+        <div><b>2 · Bếp</b>Ngâm, trộn, đồ, bày xôi theo phiếu.</div>
+        <div><b>3 · Lấy xôi</b>Khách lấy xôi, ngồi ăn hoặc mang về.</div>
+      </div>
+      ${best ? `<p>Kỷ lục của quán: <b>${vnd(best)}</b></p>` : ''}
+      <button class="btn" type="button" id="learn">Học làm xôi (có hướng dẫn)</button>
+      <button class="btn alt" type="button" id="start">Mở hàng luôn</button>`);
+    bindIntro();
+  }
+
+  intro();
+  spawnVehicle();
+})();
+</script>
+</body>
+</html>
