@@ -50,10 +50,14 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   padding-inline: max(8px, env(safe-area-inset-left, 0px)) max(8px, env(safe-area-inset-right, 0px));
   padding-block: calc(6px + env(safe-area-inset-top, 0px)) calc(8px + env(safe-area-inset-bottom, 0px));
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 2fr) auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto minmax(0, 1.75fr);
   grid-template-areas: "hud hud" "road road" "order pickup" "boxes boxes" "kitchen kitchen";
 }
-@media (min-width: 900px) { #app { padding-inline: 14px; gap: 10px; } }
+@media (min-width: 900px) { #app { padding-inline: 14px; gap: 10px; grid-template-rows: auto auto minmax(0, 1fr) auto minmax(0, 1.6fr); } }
+/* While a dish is cooking the kitchen takes the larger share, so every tray fits without scrolling. */
+#app.cooking { grid-template-rows: auto auto minmax(0, 1fr) auto minmax(0, 3fr); }
+@media (min-width: 900px) { #app.cooking { grid-template-rows: auto auto minmax(0, 1fr) auto minmax(0, 1.9fr); } }
+@media (min-width: 900px) and (max-height: 820px) { #app.cooking { grid-template-rows: auto auto minmax(0, 1fr) auto minmax(0, 2.7fr); } }
 
 /* HUD */
 .hud {
@@ -254,7 +258,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   .recipe { position: absolute; right: 8px; bottom: 8px; width: min(64%, 260px); max-height: calc(100% - 40px); z-index: 6; box-shadow: 0 6px 16px rgba(36,22,42,.35); }
   .recipe.min { width: auto; max-width: min(64%, 260px); }
   .recipe.min .rc-body { display: none; }
-  .kitchen .controls { padding-bottom: 44px; }
+  .kitchen .controls { padding-bottom: 34px; }
 }
 @media (min-width: 900px) {
   .rc-head button { display: none; }
@@ -404,12 +408,21 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 @keyframes plop { 40% { transform: scale(1.05, .96); } }
 .paddle { position: absolute; left: 50%; top: -12%; width: 9px; height: 58%; margin-left: -4px; border-radius: 4px 4px 9px 9px; background: linear-gradient(90deg, #c49a62, #8d6e4a); transform-origin: 50% 100%; animation: stirp .26s ease-in-out 4 alternate; z-index: 2; }
 @keyframes stirp { from { transform: rotate(-28deg); } to { transform: rotate(28deg); } }
+/* The step's main action button stays visible at the bottom of the kitchen. */
+.controls > .row:last-child { position: sticky; bottom: -8px; background: var(--counter); padding-block: 6px; z-index: 2; }
 @media (max-width: 899px) {
+  .kitchen.is-cooking .rail { display: none; }
   .cook { position: sticky; top: -6px; z-index: 3; background: var(--counter); padding-block: 2px; }
   .trays { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 5px; }
   .tray-dish { height: 22px; padding: 3px; }
   .soak-row { grid-template-columns: 70px minmax(0, 1fr); gap: 8px; }
   .ing.basin .tray-dish { height: 30px; }
+}
+/* Tighter spacing on short screens so the whole step fits. */
+@media (max-width: 899px), (max-height: 820px) {
+  .controls { gap: 5px; }
+  .station { gap: 2px; }
+  .coach { padding-block: 5px 6px; line-height: 1.3; }
 }
 @media (prefers-reduced-motion: reduce) {
   .walker { transition-duration: .01s; }
@@ -453,7 +466,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     <div class="box-track" id="boxTrack"><span class="label">Hộp xôi gói xong chuyển ra quầy lấy →</span></div>
   </div>
 
-  <section class="zone kitchen" aria-label="Bếp nấu xôi">
+  <section class="zone kitchen" id="kitchen" aria-label="Bếp nấu xôi">
     <div class="zone-head"><span class="num">2</span>Bếp nấu xôi<span class="sub" id="kitchenSub"></span></div>
     <div class="k-body">
       <div class="rail" id="rail"></div>
@@ -657,8 +670,26 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   // ---------- State ----------
   let S = null, raf = null, nTicket = 0;
 
+  // Vietnamese given names by how the customer is addressed.
+  const NAMES = {
+    'chị': ['Hoa', 'Hằng', 'Lan', 'Mai', 'Thu', 'Nga', 'Huyền', 'Trang'],
+    'anh': ['Thắng', 'Mạnh', 'Tuấn', 'Hùng', 'Dũng', 'Cường', 'Long', 'Phúc'],
+    'cô': ['Hương', 'Liên', 'Thảo', 'Yến'],
+    'bác': ['Bình', 'Quang', 'Tư', 'Khải'],
+    'chú': ['Toàn', 'Hải', 'Sơn', 'Đức'],
+    'bà': ['Tám', 'Cúc', 'Năm', 'Lài'],
+    'mình': ['Minh', 'Linh', 'Quân', 'Nam'],
+  };
+  function nameFor(p, used) {
+    const title = p.me === 'mình' ? 'Em' : cap(p.me);
+    const pool = NAMES[p.me].filter(n => !used.has(n));
+    const n = rand(pool.length ? pool : NAMES[p.me]);
+    used.add(n);
+    return `${title} ${n}`;
+  }
   function makeLineup(withTut) {
     let pool = [];
+    const used = new Set();
     return Array.from({ length: TOTAL }, (_, i) => {
       const isTut = withTut && i === 0;
       const type = isTut ? 'xeo' : i === 0 ? 'gac' : rand(Object.keys(RECIPES));
@@ -670,7 +701,9 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
       const mode = isTut ? 'here' : isDriver ? 'away' : (Math.random() < .55 ? 'here' : 'away');
       // App drivers are in a hurry: less patience.
       const pmax = isTut ? Infinity : Math.max(isDriver ? 45 : 55, (95 - i * 5) * (isDriver ? .8 : 1));
-      return { id: i, type, r, p, extra, mode, isTut, patience: pmax, pmax, state: 'line', mood: 'happy', el: null, slot: -1, ticket: null };
+      const name = isTut ? 'Cô Hương' : nameFor(p, used);
+      if (isTut) used.add('Hương');
+      return { id: i, name, type, r, p, extra, mode, isTut, patience: pmax, pmax, state: 'line', mood: 'happy', el: null, slot: -1, ticket: null };
     });
   }
 
@@ -759,8 +792,8 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     S.line.forEach((c, i) => {
       if (c.el.style.left !== LINE_X[i] + '%') walkTo(c, LINE_X[i]);
       c.el.classList.toggle('front', i === 0);
-      if (i === 0) setTimeout(() => { if (S.line[0] === c && c.state === 'line') setTag(c, `${c.p.driver ? 'Đơn app: ' : ''}1 ${c.r.name}${c.extra ? `<small>+ ${TOP[c.extra].s.toLowerCase()}</small>` : ''}<small>${c.p.driver ? 'Mang về' : modeText(c)}</small>`); }, 900);
-      else setTag(c, '');
+      if (i === 0) setTimeout(() => { if (S.line[0] === c && c.state === 'line') setTag(c, `<small>${c.name}${c.p.driver ? ' · đơn app' : ''}</small>1 ${c.r.name}${c.extra ? `<small>+ ${TOP[c.extra].s.toLowerCase()}</small>` : ''}<small>${c.p.driver ? 'Mang về' : modeText(c)}</small>`); }, 900);
+      else setTag(c, c.name, 'num');
     });
     renderOrderZone();
   }
@@ -783,7 +816,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
       c.el = makeWalker(c);
       c.el.style.left = '-12%';
       els.pickGround.append(c.el);
-      setTag(c, `#${c.ticket.no}`, 'num');
+      setTag(c, `#${c.ticket.no} · ${c.name}`, 'num');
       requestAnimationFrame(() => requestAnimationFrame(() => walkTo(c, PICK_X[slot])));
     }, 900);
     if (S.tutStage === 'take') S.tutStage = 'pick';
@@ -799,7 +832,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     else { S.pick[c.slot] = null; if (c.ticket) c.ticket.cancelled = true; S.tickets = S.tickets.filter(t => t !== c.ticket || (S.cook && S.cook.t === t)); }
     c.state = 'gone'; S.lost++; S.done++;
     setTag(c, 'Lâu quá!', 'mood');
-    floatText(ground, x, 'Khách bỏ đi', 'bad');
+    floatText(ground, x, `${c.name} bỏ đi`, 'bad');
     const el = c.el;
     setTimeout(() => { el.classList.remove('impatient'); el.style.transition = 'left 1.2s linear'; el.classList.add('walking'); el.style.left = '-15%'; }, 600);
     setTimeout(() => el.remove(), 1900);
@@ -808,6 +841,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 
   function deliver(c, stars, pay, tip, form) {
     const slotEl = els.shelf.children[c.slot];
+    floatText(els.pickGround, PICK_X[c.slot], `Mời ${c.name.toLowerCase()} lấy xôi!`);
     slotEl.innerHTML = form === 'plate' ? `<div class="packet dish" style="--pc:${DISH_COLOR[c.type]}"></div>` : '<div class="packet"></div>';
     ding();
     setTimeout(() => {
@@ -878,7 +912,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const c = S && S.line[0];
     const full = S && S.pick.every(x => x);
     els.takeBtn.disabled = !c || full;
-    els.takeBtn.textContent = !c ? 'Chờ khách…' : full ? 'Quầy lấy đầy, nấu nhanh!' : `Nhận order: ${orderText(c)} · ${c.mode === 'here' ? 'ăn tại quán' : 'mang về'}`;
+    els.takeBtn.textContent = !c ? 'Chờ khách…' : full ? 'Quầy lấy đầy, nấu nhanh!' : `Nhận order ${c.name.toLowerCase()}: ${orderText(c)} · ${c.mode === 'here' ? 'ăn tại quán' : 'mang về'}`;
     els.takeBtn.classList.toggle('pulse', !!(S && S.tutStage === 'take' && c));
     els.lineSub.textContent = S && S.line.length ? `${S.line.length} người đang xếp hàng` : 'Chưa có khách';
   }
@@ -887,7 +921,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     els.rail.innerHTML = list.length ? list.map(t => {
       const c = t.c, cooking = S.cook && S.cook.t === t;
       const pulse = S.tutStage === 'pick' && !S.cook ? ' pulse' : '';
-      return `<button class="tk${cooking ? ' cooking' : ''}${pulse}" type="button" data-no="${t.no}"><b>#${t.no}${cooking ? ' · đang nấu' : ''}</b><div>${cap(c.r.name)}</div><small>${c.extra ? '+ ' + TOP[c.extra].s.toLowerCase() + ' · ' : ''}${modeText(c)}</small><i></i></button>`;
+      return `<button class="tk${cooking ? ' cooking' : ''}${pulse}" type="button" data-no="${t.no}"><b>#${t.no} · ${c.name}${cooking ? ' · đang nấu' : ''}</b><div>${cap(c.r.name)}</div><small>${c.extra ? '+ ' + TOP[c.extra].s.toLowerCase() + ' · ' : ''}${modeText(c)}</small><i></i></button>`;
     }).join('') : '<span class="rail-empty">Chưa có phiếu order. Nhận order ở quầy gọi món.</span>';
     els.rail.querySelectorAll('.tk').forEach(b => b.onclick = () => startCook(+b.dataset.no));
     renderRailBars();
@@ -912,15 +946,15 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     els.kitchenSub.textContent = '';
     const r = S && S.last;
     const res = r ? `<div class="result">
-        <div><b>Phiếu #${r.no} · ${cap(r.name)}</b> <span class="stars">${[0,1,2].map(i => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span></div>
+        <div><b>Phiếu #${r.no} · ${cap(r.name)} · ${r.who}</b> <span class="stars">${[0,1,2].map(i => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span></div>
         ${r.gone ? '<div class="ok" style="color:var(--bad)">Khách đã bỏ đi, gói xôi không ai lấy.</div>' : r.notes.length ? `<ul>${r.notes.map(n => `<li>${n}</li>`).join('')}</ul>` : '<div class="ok">Chuẩn vị xôi Bắc từ gạo đến lá gói.</div>'}
       </div>` : '';
     const tutMsg = S && S.tutStage === 'take'
-      ? coach(true, 'Khu 1 · Quầy gọi món', '<p>Cô giáo đang đứng ở quầy gọi món. Bấm nút vàng <em>Nhận order</em> để ghi phiếu. Cô sẽ sang <em>quầy lấy xôi</em> đứng chờ.</p>')
+      ? coach(true, 'Khu 1 · Quầy gọi món', '<p>Cô Hương (cô giáo) đang đứng ở quầy gọi món. Bấm nút vàng <em>Nhận order</em> để ghi phiếu. Cô sẽ sang <em>quầy lấy xôi</em> đứng chờ.</p>')
       : S && S.tutStage === 'pick'
       ? coach(true, 'Khu 2 · Bếp nấu xôi', '<p>Phiếu order đã treo lên thanh phía trên. Bấm vào <em>phiếu #1</em> để bắt đầu nấu.</p>')
       : S && S.tutStage === 'after'
-      ? coach(true, 'Khu 3 · Lấy xôi và bàn ăn', '<p>Đĩa xôi đã ra quầy, cô giáo lấy rồi ngồi vào bàn ăn. Khách mang về thì cầm gói lá đi luôn, tài xế công nghệ đến lấy đơn app cũng mang về. Từ giờ khách đến liên tục, ưu tiên phiếu có thanh kiên nhẫn sắp đỏ.</p>')
+      ? coach(true, 'Khu 3 · Lấy xôi và bàn ăn', '<p>Đĩa xôi đã ra quầy, cô Hương lấy rồi ngồi vào bàn ăn. Khách mang về thì cầm gói lá đi luôn, tài xế công nghệ đến lấy đơn app cũng mang về. Từ giờ khách đến liên tục, ưu tiên phiếu có thanh kiên nhẫn sắp đỏ.</p>')
       : '';
     const waiting = S ? S.tickets.filter(t => !t.done).length : 0;
     els.controls.innerHTML = tutMsg + res + (tutMsg ? '' : `<p class="hint">${waiting ? `Có <strong>${waiting} phiếu</strong> đang chờ. Bấm vào một phiếu trên thanh để nấu.` : 'Chưa có phiếu nào. Nhận order ở <strong>quầy gọi món</strong>.'}</p>`);
@@ -991,7 +1025,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const btn = `<button type="button" id="rcToggle">${recipeMin ? 'Mở' : 'Thu gọn'}</button>`;
     // One-line recipes for the other tickets still waiting.
     const one = (c) => `${c.r.need.filter(x => x !== 'nep').map(x => ING[x].s).join(', ')}${c.r.tops.length || c.extra ? ' · bày ' + c.r.tops.concat(c.extra ? [c.extra] : []).map(x => TOP[x].s).join(' → ') : ''} · ${c.mode === 'here' ? 'bày đĩa' : 'gói lá'}`;
-    const queue = waiting.length ? `<div class="rc-queue"><b>Phiếu đang chờ</b>${waiting.map(t => `<div><b>#${t.no} ${cap(t.c.r.name)}</b>: ${one(t.c)}</div>`).join('')}</div>` : '';
+    const queue = waiting.length ? `<div class="rc-queue"><b>Phiếu đang chờ</b>${waiting.map(t => `<div><b>#${t.no} ${t.c.name} · ${cap(t.c.r.name)}</b>: ${one(t.c)}</div>`).join('')}</div>` : '';
     if (!k) {
       recipeEl.innerHTML = `<div class="rc-head"><div class="t">Bảng công thức<small>Chưa nấu phiếu nào</small></div>${btn}</div>
         <div class="rc-body"><p class="rc-empty" style="margin:0">Bấm một phiếu trên thanh, công thức của món đó sẽ hiện ở đây.</p>${queue}</div>`;
@@ -1007,7 +1041,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
         'Xới ở vạch vàng, bắc ở vùng xanh',
         (target.length ? target.map(x => TOP[x].s).join(' → ') + ' · ' : '') + (c.mode === 'here' ? 'Bày đĩa' : 'Gói lá'),
       ][step];
-      recipeEl.innerHTML = `<div class="rc-head"><div class="t">#${k.t.no} · ${cap(c.r.name)}<small>${recipeMin ? short : modeText(c)}</small></div>${btn}</div>
+      recipeEl.innerHTML = `<div class="rc-head"><div class="t">#${k.t.no} · ${cap(c.r.name)} · ${c.name}<small>${recipeMin ? short : modeText(c)}</small></div>${btn}</div>
         <div class="rc-body"><ol>
           <li class="${cls(0)}"><b>1. Ngâm gạo nếp</b><br>6 đến 8 tiếng cho hạt nở mềm</li>
           <li class="${cls(1)}"><b>2. Trộn với nếp</b><div class="chips">${need.map(x => chip(ING[x].s, k.mix.includes(x))).join('')}</div></li>
@@ -1062,9 +1096,10 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const t = S.tickets.find(x => x.no === no);
     if (!t) return;
     beep(500);
+    $('kitchen').classList.add('is-cooking'); $('app').classList.add('cooking');
     S.cook = { t, stage: 'soak', mix: [], served: [], done: 0, stirred: false, stirMissed: false, notes: [] };
     if (S.tutStage === 'pick') S.tutStage = 'cooking';
-    els.nowTitle.innerHTML = `Phiếu #${t.no}: ${cap(t.c.r.name)}<small>${t.c.extra ? `Thêm ${TOP[t.c.extra].s.toLowerCase()} · ` : ''}${modeText(t.c)}</small>`;
+    els.nowTitle.innerHTML = `Phiếu #${t.no}: ${cap(t.c.r.name)}<small>${t.c.name} · ${t.c.extra ? `Thêm ${TOP[t.c.extra].s.toLowerCase()} · ` : ''}${modeText(t.c)}</small>`;
     els.kitchenSub.textContent = `Đang nấu phiếu #${t.no}`;
     renderRail();
     startSoak();
@@ -1178,7 +1213,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const target = c.r.tops.concat(c.extra ? [c.extra] : []);
     const want = c.r.tops.length ? `Bày phần ăn kèm cho ${c.r.name} đúng thứ tự.` : `${cap(c.r.name)} ăn mộc, chỉ thêm thứ khách dặn.`;
     els.controls.innerHTML = `
-      ${coach(tut(), 'Bước 4 · Bày ra đĩa hoặc gói mang về', '<p>Xôi xéo bày theo thứ tự <em>1. đỗ nắm thái</em>, <em>2. hành phi</em>, <em>3. mỡ hành</em>. Cô giáo <em>ăn tại quán</em>, nên bấm <em>Bày đĩa</em>. Khách mang về thì bấm <em>Gói lá</em>.</p>')}
+      ${coach(tut(), 'Bước 4 · Bày ra đĩa hoặc gói mang về', '<p>Xôi xéo bày theo thứ tự <em>1. đỗ nắm thái</em>, <em>2. hành phi</em>, <em>3. mỡ hành</em>. Cô Hương <em>ăn tại quán</em>, nên bấm <em>Bày đĩa</em>. Khách mang về thì bấm <em>Gói lá</em>.</p>')}
       ${tut() ? '' : `<p class="hint">${want} Khách dặn: <strong>${c.extra ? TOP[c.extra].s : 'không thêm gì'}</strong> · <strong>${modeText(c)}</strong>.</p>`}
       ${station('Đồ ăn kèm', keys.map(x => { const i = target.indexOf(x); return trayBtn(x, TOP[x], tut() && i >= 0, i + 1); }).join(''))}
       <div class="row"><button class="btn ghost" id="undo" type="button" style="flex:.6">Gạt lại</button><button class="btn yellow${tut() ? ' pulse' : ''}" id="plate" type="button">Bày đĩa · ăn tại quán</button><button class="btn" id="wrap" type="button">Gói lá · mang về</button></div>`;
@@ -1221,8 +1256,9 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const tip = !gone && stars === 3 && pf > .4 ? 5 : 0;
     t.done = true;
     S.tickets = S.tickets.filter(x => x !== t);
-    S.last = { no: t.no, name: c.r.name, stars, notes: k.notes, gone };
+    S.last = { no: t.no, name: c.r.name, who: c.name, stars, notes: k.notes, gone };
     S.cook = null; S.stageTick = null;
+    $('kitchen').classList.remove('is-cooking'); $('app').classList.remove('cooking');
     if (!gone) {
       S.money += pay + tip; S.stars += stars; if (stars) S.served++;
       els.money.textContent = vnd(S.money);
