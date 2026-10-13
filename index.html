@@ -56,6 +56,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 @media (min-width: 900px) { #app { padding-inline: 14px; gap: 10px; } }
 /* The kitchen is only as tall as the current step needs; the counters take the rest. */
 .kitchen { max-height: 70dvh; }
+@media (max-width: 899px) { .kitchen:not(.is-cooking) { max-height: 50dvh; } .result .fact { font-size: .74rem; } .receipt { font-size: .78rem; } }
 @media (min-width: 900px) { .kitchen { max-height: 60dvh; } }
 @media (min-width: 900px) and (max-height: 820px) { .kitchen { max-height: 64dvh; } }
 
@@ -74,7 +75,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 .chip { font-family: var(--font-sign); font-weight: 800; font-size: .9rem; color: var(--gold); border: 2px solid var(--gold); border-radius: 999px; padding: 0 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .chip.money { background: var(--gold); color: var(--sign); }
 .iconbtn { border: 2px solid var(--gold); background: transparent; color: var(--gold); border-radius: 999px; height: 28px; padding: 0 9px; font-weight: 800; font-size: .85rem; }
-@media (max-width: 520px) { .street, #fsBtn { display: none; } .order .sub { display: none; } }
+@media (max-width: 520px) { .street, #fsBtn { display: none; } .order .sub { display: none; } .menu-board { display: none; } }
 
 /* Zones */
 .zone { position: relative; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; min-width: 0; box-shadow: 0 4px 0 rgba(58,37,65,.25); }
@@ -167,8 +168,8 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   .box-track .label { font-size: .62rem; white-space: normal; line-height: 1.05; }
   .hop { scale: .62; }
 }
-.menu-board { position: absolute; top: 6%; right: 5%; width: min(46%, 150px); max-height: 38%; background: #fff; border: 2px solid var(--sign); border-radius: 4px; padding: 3px 5px; font-size: .58rem; line-height: 1.2; overflow: hidden; font-weight: 600; }
-.menu-board b { display: block; font-family: var(--font-sign); color: var(--gac-dark); font-size: .7rem; }
+.menu-board { position: absolute; top: 6%; right: 5%; width: min(46%, 170px); max-height: 40%; background: #fff; border: 2px solid var(--sign); border-radius: 4px; padding: 3px 6px; font-size: .7rem; line-height: 1.2; overflow: hidden; font-weight: 600; }
+.menu-board b { display: block; font-family: var(--font-sign); color: var(--gac-dark); font-size: .8rem; }
 .order-counter {
   position: absolute; right: 0; bottom: 0; width: min(30%, 150px); height: min(36cqh, 105px); border-radius: 8px 0 0 0;
   background:
@@ -211,11 +212,12 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 .walker .tag {
   position: absolute; bottom: calc(100% - 2px); left: 50%; transform: translateX(-50%) rotate(-2deg);
   background: #fff; color: var(--ink); border-radius: 7px; padding: 2px 7px 3px; box-shadow: 0 2px 0 rgba(0,0,0,.2);
-  font-family: var(--font-sign); font-weight: 800; font-size: .72rem; line-height: 1.1; text-align: center; white-space: nowrap; z-index: 4;
+  font-family: var(--font-sign); font-weight: 800; font-size: .84rem; line-height: 1.1; text-align: center; white-space: nowrap; z-index: 4;
 }
 .walker .tag small { display: block; color: var(--gac-dark); font-weight: 700; }
 .walker .tag.num { background: var(--sign); color: var(--gold); }
 .walker .tag.mood { background: var(--sign); color: var(--gold); }
+.walker.front { z-index: 5; }
 .walker.front .tag { animation: pop .3s ease-out both; }
 @keyframes pop { from { transform: translateX(-50%) scale(0); } }
 .walking svg { animation: bob .22s ease-in-out infinite alternate; }
@@ -268,7 +270,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   .k-body { display: grid; grid-template-columns: minmax(280px, 30%) minmax(0, 1fr) minmax(220px, 24%); grid-template-rows: auto minmax(0, 1fr); column-gap: 14px; row-gap: 6px; overflow: hidden; }
   .recipe { grid-column: 3; grid-row: 1 / span 2; }
   .rail { grid-column: 1; }
-  .cook { grid-column: 1; align-self: start; }
+  .cook { grid-column: 1; align-self: start; grid-template-columns: minmax(130px, 44%) 1fr; }
   .controls { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; min-height: 0; padding: 2px 4px 4px 0; }
 }
 .rail { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 2px; min-height: 52px; border-bottom: 2px dashed #e6d7b0; flex: none; }
@@ -363,7 +365,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 
 @media (max-width: 899px) {
   .k-body { padding: 6px; gap: 6px; }
-  .cook { grid-template-columns: 60px 1fr !important; gap: 8px; }
+  .cook { grid-template-columns: 74px 1fr !important; gap: 8px; }
   .steps { margin-bottom: 3px; }
   .now-title { font-size: .9rem; }
   .now-title small { display: inline; margin-left: 4px; }
@@ -425,7 +427,41 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   .station { gap: 2px; }
   .coach { padding-block: 5px 6px; line-height: 1.3; }
 }
+/* Focus: the zone that needs the player is ringed in gold; the rest steps back.
+   During a timing step the road and the tub steam go quiet. */
+.zone, .road, .boxline { transition: filter .35s, opacity .35s, box-shadow .35s; }
+.zone.is-focus { box-shadow: 0 0 0 3px var(--gold), 0 0 0 6px var(--sign), 0 6px 18px rgba(36,22,42,.3); }
+#app[data-focus=kitchen] .zone:not(.kitchen), #app[data-focus=kitchen] .boxline { filter: saturate(.55) brightness(.9); }
+#app[data-focus=order] .kitchen, #app[data-focus=order] .pickup, #app[data-focus=order] .boxline { filter: saturate(.7) brightness(.95); }
+#app.timing .road { opacity: .5; filter: grayscale(.8) brightness(.8); }
+#app.timing .tub i::after { animation: none; opacity: 0; }
+/* In-place pointer used by the tutorial: a short label with an arrow at the thing to press. */
+.pointer { position: fixed; left: 0; top: 0; z-index: 30; pointer-events: none; background: var(--good); color: #fff; font-family: var(--font-sign); font-weight: 800; font-size: .95rem; line-height: 1.15; padding: 4px 11px 5px; border-radius: 10px; box-shadow: 0 3px 0 #1e5c1a, 0 6px 14px rgba(0,0,0,.25); white-space: nowrap; animation: nudge .6s ease-in-out infinite alternate; }
+.pointer::after { content: ""; position: absolute; left: var(--ax, 50%); margin-left: -8px; border: 8px solid transparent; }
+.pointer[data-side=top]::after { top: 100%; border-top-color: var(--good); }
+.pointer[data-side=bottom]::after { bottom: 100%; border-bottom-color: var(--good); }
+.pointer[data-side=bottom] { animation-name: nudgeb; }
+@keyframes nudge { to { translate: 0 -4px; } }
+@keyframes nudgeb { to { translate: 0 4px; } }
+/* Pop label over the pot when a step lands (or misses). */
+.burst { position: absolute; left: 50%; top: 18%; z-index: 4; pointer-events: none; transform: translateX(-50%); font-family: var(--font-sign); font-weight: 800; font-size: 1.15rem; white-space: nowrap; color: #fff; background: var(--good); border-radius: 999px; padding: 1px 12px 2px; box-shadow: 0 3px 0 #1e5c1a; animation: burst 1.1s ease-out both; }
+.burst.bad { background: var(--bad); box-shadow: 0 3px 0 #8a1f12; }
+.burst::before, .burst::after { content: "✦"; position: absolute; top: -12px; color: var(--gold); font-size: .9rem; text-shadow: 0 1px 0 #c99500; }
+.burst::before { left: -6px; } .burst::after { right: -6px; top: -4px; }
+.burst.bad::before, .burst.bad::after { display: none; }
+@keyframes burst { 0% { scale: .3; opacity: 0; } 18% { scale: 1.15; opacity: 1; } 30% { scale: 1; } 75% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 -18px; } }
+/* Order ticket flying from the counter to the kitchen. */
+.fly-tk { position: fixed; left: 0; top: 0; z-index: 25; pointer-events: none; background: #fff; border: 2px solid var(--sign); border-radius: 6px; padding: 1px 8px; font-family: var(--font-sign); font-weight: 800; color: var(--gac-dark); box-shadow: 0 4px 10px rgba(0,0,0,.25); }
+/* Receipt under a finished dish: price, what was taken off and why, tip, total. */
+.receipt { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; font-size: .84rem; font-variant-numeric: tabular-nums; }
+.receipt .minus { color: var(--bad); }
+.receipt .plus { color: var(--good); }
+.receipt .sum { font-family: var(--font-sign); font-weight: 800; font-size: 1rem; border-top: 2px dashed #e6d7b0; padding-top: 2px; }
+.result .fact { font-size: .8rem; color: var(--ink-soft); border-top: 1px solid #efe3c3; padding-top: 3px; }
+.result .fact b { color: var(--sign); }
+.chip small { font-size: .7rem; font-weight: 700; opacity: .9; }
 @media (prefers-reduced-motion: reduce) {
+  .pointer, .burst { animation: none !important; }
   .walker { transition-duration: .01s; }
   .walker *, .steam span, .pulse, .float { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
 }
@@ -439,7 +475,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     <div class="street"><small>PHỐ</small>HÀNG XÔI</div>
     <span class="grow"></span>
     <span class="chip" id="clock">5:30</span>
-    <span class="chip" id="count">0/8</span>
+    <span class="chip" id="count" title="Khách đã xong (lấy xôi hoặc bỏ đi) trên tổng số khách">0/8 <small>khách</small></span>
     <span class="chip money" id="money">0đ</span>
     <button class="iconbtn" id="guideBtn" type="button">Hướng dẫn</button>
     <button class="iconbtn" id="fsBtn" type="button" aria-label="Toàn màn hình">⛶</button>
@@ -517,6 +553,11 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
 </div>
 
 <div class="overlay" id="overlay"></div>
+<div class="pointer" id="pointer" hidden></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="chShade" x1="0" x2="1"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
+  <radialGradient id="chHead" cx=".38" cy=".34" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></radialGradient>
+</defs></svg>
 
 <script>
 (() => {
@@ -590,16 +631,16 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     if (p.driver) extra += `<path d="M30 39 L30 76" stroke="#0f6b39" stroke-width="1.6"/><path d="M14 52 L46 52" stroke="#fff" stroke-width="2" opacity=".7"/>`;
     const phone = p.driver && !p.carry ? `<rect x="5" y="62" width="8" height="12" rx="1.5" fill="#222"/><rect x="6.2" y="63.5" width="5.6" height="8" fill="#7cc6f0"/>` : '';
     return `<svg viewBox="0 0 60 112" aria-hidden="true">
-      <ellipse cx="30" cy="108" rx="20" ry="3" fill="rgba(0,0,0,.22)"/>
+      <ellipse cx="30" cy="108" rx="21" ry="3.6" fill="rgba(0,0,0,.3)"/>
       <g class="leg-l"><rect x="19" y="${legsY}" width="9" height="${106 - legsY}" rx="3" fill="${p.pants}"/><ellipse cx="23" cy="106" rx="6" ry="3" fill="${dark}"/></g>
       <g class="leg-r"><rect x="32" y="${legsY}" width="9" height="${106 - legsY}" rx="3" fill="${p.pants}"/><ellipse cx="37" cy="106" rx="6" ry="3" fill="${dark}"/></g>
       ${p.ao ? `<rect x="19" y="90" width="22" height="8" fill="${p.pants}"/>` : ''}
       ${box}${hairBack}
       <g class="arm-l"><rect x="7" y="41" width="8" height="28" rx="4" fill="${p.shirt}"/><circle cx="11" cy="70" r="4" fill="${p.skin}"/>${phone}</g>
       <g class="arm-r"><rect x="45" y="41" width="8" height="28" rx="4" fill="${p.shirt}"/><circle cx="49" cy="70" r="4" fill="${p.skin}"/>${basket}</g>
-      ${body}${extra}${carry}
+      ${body}${body.replace(/fill="[^"]*"/, 'fill="url(#chShade)"').replace(/ stroke="[^"]*" stroke-width="1"/, '')}${extra}${carry}
       <rect x="26" y="34" width="8" height="6" fill="${p.skin}"/>
-      <circle cx="30" cy="26" r="13" fill="${p.skin}"/>
+      <circle cx="30" cy="26" r="13" fill="${p.skin}"/><circle cx="30" cy="26" r="13" fill="url(#chHead)"/>
       ${hairTop}${hat}
       <circle cx="25" cy="26.5" r="1.7" fill="${dark}"/><circle cx="35" cy="26.5" r="1.7" fill="${dark}"/>
       <circle cx="21.5" cy="31" r="2.2" fill="#e8796a" opacity=".35"/><circle cx="38.5" cy="31" r="2.2" fill="#e8796a" opacity=".35"/>
@@ -667,6 +708,48 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
   const orderText = (c) => `${cap(c.r.name)}${c.extra ? ' + ' + TOP[c.extra].s.toLowerCase() : ''}`;
   const modeText = (c) => c.p.driver ? 'Đơn app · mang về' : c.mode === 'here' ? 'Ăn tại quán' : 'Mang về';
   const DISH_COLOR = { gac: '#d8402f', xeo: '#f2bf36', lac: '#efe4c8', do: '#f2df9a' };
+  // Food lore, shown after the dish is done rather than in the middle of the instructions.
+  const FACTS = {
+    xeo: 'Xôi xéo là món sáng quen thuộc của Hà Nội: nếp nghệ vàng, đỗ nắm thái mỏng, hành phi giòn.',
+    gac: 'Xôi gấc đỏ tượng trưng cho may mắn, hay có trong mâm cỗ Tết và đám cưới.',
+    lac: 'Lạc ngâm mềm rồi đồ cùng nếp, ăn kèm muối vừng giã thô là ngon nhất.',
+    do: 'Đỗ xanh đãi sạch vỏ cho hạt vàng, đồ lẫn với nếp thành xôi bùi.',
+  };
+  const SOUTH = 'Cốt dừa, lá dứa và dừa nạo là kiểu xôi miền Nam, xôi Bắc không dùng.';
+
+  // Tutorial pointer: a short label with an arrow, kept next to the thing to press.
+  const ptr = $('pointer');
+  let ptrEl = null, ptrText = '';
+  let pulsed = null;
+  function pointAt(el, text) {
+    // A big action button just glows; the label is for smaller targets like trays and gauges.
+    const isBtn = !!(el && el.classList.contains('btn'));
+    if (pulsed && pulsed !== el) { pulsed.classList.remove('pulse'); pulsed = null; }
+    if (isBtn) { el.classList.add('pulse'); pulsed = el; el = null; }
+    if (el !== ptrEl || text !== ptrText) { ptrEl = el || null; ptrText = text || ''; ptr.textContent = ptrText; }
+    placePointer();
+  }
+  function placePointer() {
+    if (!ptrEl || !ptrEl.isConnected || !els.overlay.hidden) { ptr.hidden = true; return; }
+    const r = ptrEl.getBoundingClientRect();
+    if (!r.width && !r.height) { ptr.hidden = true; return; }
+    ptr.hidden = false;
+    const pw = ptr.offsetWidth, ph = ptr.offsetHeight;
+    const above = r.top - ph - 12 > 2;
+    const x = clamp(r.left + r.width / 2 - pw / 2, 6, innerWidth - pw - 6);
+    const y = above ? r.top - ph - 10 : Math.min(innerHeight - ph - 4, r.bottom + 10);
+    ptr.dataset.side = above ? 'top' : 'bottom';
+    ptr.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`;
+    ptr.style.setProperty('--ax', clamp(r.left + r.width / 2 - x, 12, pw - 12) + 'px');
+  }
+  addEventListener('resize', placePointer);
+  function burst(text, kind = '') {
+    const b = document.createElement('div');
+    b.className = 'burst ' + kind; b.textContent = text;
+    potBox.append(b); setTimeout(() => b.remove(), 1150);
+  }
+  // Money in thousands, rounded to 500đ.
+  const half = (k) => Math.round(k * 2) / 2;
 
   // ---------- State ----------
   let S = null, raf = null, nTicket = 0;
@@ -752,9 +835,73 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     }
     if (S.stageTick) S.stageTick(dt);
     renderRailBars();
+    updateFocus();
+    if (S.tutorial) tutorialPointer(dt); else if (ptrEl) pointAt(null);
     if (S.spawned >= TOTAL && !S.line.length && S.pick.every(x => !x) && S.seats.every(x => !x) && !S.cook && !S.ending) {
       S.ending = true; setTimeout(endDay, 900);
     }
+  }
+
+  // The zone that needs the player right now gets the gold ring; the rest dims a little.
+  const zoneEls = { order: document.querySelector('.zone.order'), kitchen: $('kitchen'), pickup: document.querySelector('.zone.pickup') };
+  const appEl = $('app');
+  let focusNow = null;
+  function updateFocus() {
+    const k = S.cook;
+    const waiting = S.tickets.some(t => !t.done);
+    const f = k || waiting ? 'kitchen' : S.line.length && S.pick.includes(null) ? 'order' : '';
+    if (f !== focusNow) {
+      focusNow = f;
+      if (f) appEl.dataset.focus = f; else delete appEl.dataset.focus;
+      Object.entries(zoneEls).forEach(([z, el]) => el.classList.toggle('is-focus', z === f));
+    }
+    appEl.classList.toggle('timing', !!(k && (k.stage === 'soak' || k.stage === 'steam')));
+  }
+
+  // Tutorial: one request at a time, pointed at in place.
+  function tutorialPointer(dt) {
+    const k = S.cook, q = (sel) => els.controls.querySelector(sel);
+    if (S.tutStage === 'take') {
+      const c = S.line[0];
+      return pointAt(c && c.el && c.el.querySelector('.tag') ? els.takeBtn.parentNode : null, 'Bấm để nhận order');
+    }
+    if (S.tutStage === 'pick') return pointAt(els.rail.querySelector('.tk'), 'Bấm phiếu để nấu');
+    if (S.tutStage === 'cooking' && k) {
+      if (k.stage === 'soak') {
+        const inZone = k.h >= 6 && k.h <= 8;
+        return pointAt(inZone ? $('go') : q('.gauge'), inZone ? 'Vớt gạo ngay!' : 'Đợi kim vào vùng xanh');
+      }
+      if (k.stage === 'mix') {
+        const need = k.t.c.r.need.filter(x => !k.mix.includes(x));
+        const wrong = k.mix.filter(x => !k.t.c.r.need.includes(x));
+        if (wrong.length) return pointAt(q(`.ing[data-k="${wrong[0]}"]`), 'Bấm lại để bỏ ra');
+        if (need.length) return pointAt(q(`.ing[data-k="${need[0]}"]`), `Cho ${ING[need[0]].s.toLowerCase()} vào nồi`);
+        return pointAt($('go'), 'Lên chõ đồ');
+      }
+      if (k.stage === 'steam') {
+        if (!k.stirred && k.done >= .42) return pointAt($('stir'), 'Xới ngay!');
+        if (k.stirred && k.done >= .8) return pointAt($('go'), 'Bắc chõ!');
+        return pointAt(q('.gauge'), k.stirred ? 'Đợi kim vào vùng xanh' : 'Đợi kim tới vạch vàng');
+      }
+      if (k.stage === 'serve') {
+        const target = k.t.c.r.tops;
+        const next = target.find(x => !k.served.includes(x));
+        if (next) return pointAt(q(`.ing[data-k="${next}"]`), `${target.indexOf(next) + 1}. ${TOP[next].s}`);
+        return pointAt($('plate'), 'Cô Hương ăn tại quán');
+      }
+      return pointAt(null);
+    }
+    if (S.tutStage === 'after') {
+      // Introduce patience with the first real customer, then step back.
+      const c = S.line[0];
+      if (c && !c.isTut && c.el) {
+        S.patT = (S.patT || 0) + dt;
+        if (S.patT > 7) { S.tutStage = null; renderIdleKitchen(); return pointAt(null); }
+        return pointAt(c.el.querySelector('.bar'), 'Thanh kiên nhẫn: hết là khách bỏ đi');
+      }
+      return pointAt(null);
+    }
+    pointAt(null);
   }
 
   // ---------- Customers ----------
@@ -803,6 +950,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const slot = S.pick.indexOf(null);
     if (!c || slot < 0) return;
     good();
+    floatText(els.orderGround, LINE_X[0], `Cho ${c.p.me} 1 ${c.r.name}${c.extra ? ' thêm ' + TOP[c.extra].s.toLowerCase() : ''}!`);
     S.line.shift();
     c.state = 'waiting'; c.slot = slot; S.pick[slot] = c;
     c.ticket = { no: ++nTicket, c };
@@ -822,6 +970,22 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     }, 900);
     if (S.tutStage === 'take') S.tutStage = 'pick';
     layoutLine(); renderAll();
+    flyTicket(c.ticket.no);
+  }
+  function flyTicket(no) {
+    if (reduceMotion) return;
+    const a = els.takeBtn.getBoundingClientRect();
+    let b = els.rail.getBoundingClientRect();
+    if (!b.width) b = $('kitchen').getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'fly-tk'; el.textContent = `Phiếu #${no}`;
+    document.body.append(el);
+    const x0 = a.left + a.width / 2 - 30, y0 = a.top, x1 = b.left + 16, y1 = b.top + 6;
+    el.animate([
+      { transform: `translate(${x0}px, ${y0}px) scale(.7)`, opacity: 0 },
+      { transform: `translate(${(x0 + x1) / 2}px, ${Math.min(y0, y1) - 40}px) scale(1.15)`, opacity: 1, offset: .45 },
+      { transform: `translate(${x1}px, ${y1}px) scale(1)`, opacity: 1 },
+    ], { duration: 750, easing: 'ease-in-out' }).onfinish = () => el.remove();
   }
   els.takeBtn.onclick = takeOrder;
 
@@ -840,7 +1004,18 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     layoutLine(); renderAll();
   }
 
-  function deliver(c, stars, pay, tip, form) {
+  function reaction(stars, notes) {
+    if (stars === 3) return 'Ngon quá!';
+    const all = notes.join(' ').toLowerCase();
+    if (all.includes('sống')) return 'Xôi hơi sống…';
+    if (all.includes('khê')) return 'Khét quá!';
+    if (all.includes('đĩa') || all.includes('gói lá')) return 'Nhầm đĩa với gói rồi';
+    if (all.includes('quên') || all.includes('thiếu')) return 'Thiếu món rồi…';
+    if (all.includes('ngâm')) return 'Hạt hơi cứng…';
+    if (all.includes('miền nam') || all.includes('không cần') || all.includes('không gọi')) return 'Vị lạ thế?';
+    return stars === 2 ? 'Cảm ơn nhé' : stars === 1 ? 'Ừm…' : 'Hừ!';
+  }
+  function deliver(c, stars, pay, tip, form, notes = []) {
     const slotEl = els.shelf.children[c.slot];
     floatText(els.pickGround, PICK_X[c.slot], `Mời ${c.name.toLowerCase()} lấy xôi!`);
     slotEl.innerHTML = form === 'plate' ? `<div class="packet dish" style="--pc:${DISH_COLOR[c.type]}"></div>` : '<div class="packet"></div>';
@@ -849,12 +1024,13 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
       if (c.state !== 'waiting') return;
       slotEl.innerHTML = '';
       c.state = 'gone'; S.pick[c.slot] = null; S.done++;
+      S.money += pay + tip; els.money.textContent = vnd(S.money);
       const mood = stars >= 2 ? 'happy' : stars === 1 ? 'ok' : 'angry';
       const seat = form === 'plate' ? S.seats.indexOf(null) : -1;
       c.mood = ''; if (seat < 0) c.p = Object.assign({}, c.p, { carry: true }); setMood(c, mood);
       c.el.classList.remove('impatient');
-      setTag(c, stars === 3 ? 'Ngon quá!' : stars === 2 ? 'Cảm ơn nhé' : stars === 1 ? 'Ừm…' : 'Hừ!', 'mood');
-      floatText(els.pickGround, PICK_X[c.slot], pay ? `+${vnd(pay + tip)}` : '0đ', pay ? '' : 'bad');
+      setTag(c, reaction(stars, notes), 'mood');
+      floatText(els.pickGround, PICK_X[c.slot], pay ? `+${vnd(pay + tip)}` : 'Không trả tiền', pay ? '' : 'bad');
       const el = c.el;
       const leave = (delay) => {
         setTimeout(() => { el.style.transition = 'left 1.3s linear'; el.classList.add('walking'); el.style.left = '115%'; }, delay);
@@ -948,19 +1124,22 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const r = S && S.last;
     const res = r ? `<div class="result">
         <div><b>Phiếu #${r.no} · ${cap(r.name)} · ${r.who}</b> <span class="stars">${[0,1,2].map(i => `<span class="${i < r.stars ? '' : 'off'}">★</span>`).join('')}</span></div>
-        ${r.gone ? '<div class="ok" style="color:var(--bad)">Khách đã bỏ đi, gói xôi không ai lấy.</div>' : r.notes.length ? `<ul>${r.notes.map(n => `<li>${n}</li>`).join('')}</ul>` : '<div class="ok">Chuẩn vị xôi Bắc từ gạo đến lá gói.</div>'}
+        ${r.gone ? '<div class="ok" style="color:var(--bad)">Khách đã bỏ đi, gói xôi không ai lấy.</div>' : `<div class="receipt">
+          <span>Giá ${r.name}</span><span>${vnd(r.price)}</span>
+          ${r.cuts.map(x => `<span class="minus">− ${x.why}</span><span class="minus">−${vnd(x.k)}</span>`).join('')}
+          ${r.stars ? '' : `<span class="minus">Khách chê, không trả tiền</span><span class="minus">−${vnd(r.price - r.cuts.reduce((a, x) => a + x.k, 0))}</span>`}
+          ${r.tip ? `<span class="plus">+ Boa vì 3 sao, khách chưa phải chờ lâu</span><span class="plus">+${vnd(r.tip)}</span>` : ''}
+          <span class="sum">Thu về</span><span class="sum">${vnd(r.pay + r.tip)}</span>
+        </div>${r.cuts.length ? '' : '<div class="ok">Chuẩn vị xôi Bắc từ gạo đến lá gói.</div>'}`}
+        <div class="fact"><b>Bạn có biết:</b> ${r.fact}</div>
       </div>` : '';
-    const tutMsg = S && S.tutStage === 'take'
-      ? coach(true, 'Khu 1 · Quầy gọi món', '<p>Cô Hương (cô giáo) đang đứng ở quầy gọi món. Bấm nút vàng <em>Nhận order</em> để ghi phiếu. Cô sẽ sang <em>quầy lấy xôi</em> đứng chờ.</p>')
-      : S && S.tutStage === 'pick'
-      ? coach(true, 'Khu 2 · Bếp nấu xôi', '<p>Phiếu order đã treo lên thanh phía trên. Bấm vào <em>phiếu #1</em> để bắt đầu nấu.</p>')
-      : S && S.tutStage === 'after'
-      ? coach(true, 'Khu 3 · Lấy xôi và bàn ăn', '<p>Đĩa xôi đã ra quầy, cô Hương lấy rồi ngồi vào bàn ăn. Khách mang về thì cầm gói lá đi luôn, tài xế công nghệ đến lấy đơn app cũng mang về. Từ giờ khách đến liên tục, ưu tiên phiếu có thanh kiên nhẫn sắp đỏ.</p>')
+    const tutMsg = S && S.tutStage === 'after'
+      ? coach(true, 'Xong món đầu tiên!', '<p>Từ giờ khách đến liên tục. Để ý <em>thanh kiên nhẫn</em> dưới chân khách.</p>')
       : '';
     const waiting = S ? S.tickets.filter(t => !t.done).length : 0;
-    els.controls.innerHTML = tutMsg + res + (tutMsg ? '' : `<p class="hint">${waiting ? `Có <strong>${waiting} phiếu</strong> đang chờ. Bấm vào một phiếu trên thanh để nấu.` : 'Chưa có phiếu nào. Nhận order ở <strong>quầy gọi món</strong>.'}</p>`);
+    els.controls.innerHTML = tutMsg + res + (tutMsg || (S && S.tutorial && S.tutStage) ? '' : (waiting ? `<p class="hint">Có <strong>${waiting} phiếu</strong> đang chờ. Bấm vào một phiếu trên thanh để nấu.</p>` : ''));
   }
-  function renderAll() { renderOrderZone(); renderRail(); renderPickup(); renderIdleKitchen(); renderRecipe(); els.count.textContent = `${S ? S.done : 0}/${TOTAL}`; }
+  function renderAll() { renderOrderZone(); renderRail(); renderPickup(); renderIdleKitchen(); renderRecipe(); els.count.innerHTML = `${S ? S.done : 0}/${TOTAL} <small>khách</small>`; }
 
   // ---------- Trays and the ladle animation ----------
   const potBox = $('potBox');
@@ -1077,6 +1256,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     };
     if (inPot.includes('lac')) speck('#9b5e36', 22, 3);
     if (inPot.includes('doxanh') && !inPot.includes('nghe')) speck('#e2b52f', 26, 2.2);
+    if (hasRice && k.done > .93) b += `<ellipse cx="100" cy="72" rx="62" ry="14" fill="none" stroke="#5a3214" stroke-width="${Math.min(7, (k.done - .93) * 70)}" opacity=".85"/>`;
     els.bits.innerHTML = hasRice ? b : '';
     let t = '';
     (k ? k.served : []).forEach((key) => {
@@ -1098,7 +1278,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     if (!t) return;
     beep(500);
     $('kitchen').classList.add('is-cooking');
-    S.cook = { t, stage: 'soak', mix: [], served: [], done: 0, stirred: false, stirMissed: false, notes: [] };
+    S.cook = { t, stage: 'soak', mix: [], served: [], done: 0, h: 0, stirred: false, stirMissed: false, notes: [], by: { soak: [], mix: [], steam: [], serve: [] } };
     if (S.tutStage === 'pick') S.tutStage = 'cooking';
     els.nowTitle.innerHTML = `Phiếu #${t.no}: ${cap(t.c.r.name)}<small>${t.c.name} · ${t.c.extra ? `Thêm ${TOP[t.c.extra].s.toLowerCase()} · ` : ''}${modeText(t.c)}</small>`;
     els.kitchenSub.textContent = `Đang nấu phiếu #${t.no}`;
@@ -1106,12 +1286,18 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     startSoak();
   }
 
+  // A mistake is noted against its step; its cost shows at once and again on the receipt.
+  const note = (step, text) => { S.cook.notes.push(text); S.cook.by[step].push(text); };
+  const cut = (q) => half(S.cook.t.c.r.price * .125 * (1 - q));
+  const costText = (q) => { const k = cut(q); return k > 0 && !tut() ? ` · −${vnd(k)}` : ''; };
+
   function startSoak() {
     const k = S.cook; k.stage = 'soak'; setStep(0); drawPot();
     const speed = tut() ? 2.6 : 7 + S.done * 1.1;
     let h = 0, dir = 1;
+    k.h = 0;
     els.controls.innerHTML = `
-      ${coach(tut(), 'Bước 1 · Ngâm gạo nếp', '<p>Nếp cái hoa vàng ngâm <em>6 đến 8 tiếng</em> cho hạt nở mềm. Đợi kim vào <em>vùng xanh</em> rồi bấm <em>Vớt gạo</em>.</p>')}
+      ${coach(tut(), 'Bước 1 · Ngâm gạo', '<p>Đợi kim vào <em>vùng xanh</em> rồi bấm <em>Vớt gạo</em>. Kim sẽ chờ bạn.</p>')}
       ${tut() ? '' : '<p class="hint">Bấm <strong>Vớt gạo</strong> khi kim trong vùng <strong>6 đến 8 tiếng</strong>.</p>'}
       <div class="soak-row">
         <div class="ing tray basin" id="basin"><span class="tray-dish" data-tex="liquid" style="--c:#cfe6ee"><i></i></span>Chậu ngâm nếp</div>
@@ -1124,17 +1310,25 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
       <div class="row"><button class="btn" id="go" type="button">Vớt gạo</button></div>`;
     const needle = $('needle'), hours = $('hours');
     S.stageTick = (dt) => {
-      h += dir * speed * dt;
-      if (h >= 12) { h = 12; dir = -1; } if (h <= 0) { h = 0; dir = 1; }
+      if (tut() && h >= 6.2) {
+        // Tutorial: the needle waits inside the good zone until the player presses.
+        h += dir * .8 * dt;
+        if (h >= 7.8) { h = 7.8; dir = -1; } if (h <= 6.2) { h = 6.2; dir = 1; }
+      } else {
+        h += dir * speed * dt;
+        if (h >= 12) { h = 12; dir = -1; } if (h <= 0) { h = 0; dir = 1; }
+      }
+      k.h = h;
       needle.style.left = (h / 12 * 100) + '%';
       hours.textContent = h.toFixed(1).replace('.', ',') + ' tiếng';
     };
     $('go').onclick = () => {
-      S.stageTick = null;
       const out = h < 6 ? 6 - h : h > 8 ? h - 8 : 0;
+      if (tut() && out) { bad(); burst('Còn non!', 'bad'); toast('Đợi kim vào vùng xanh rồi bấm lại', 'bad'); return; }
+      S.stageTick = null;
       k.qSoak = clamp(1 - out / 3.5);
-      if (!out) { good(); toast('Gạo nở vừa, hạt mẩy', 'good'); }
-      else { bad(); toast(h < 6 ? 'Ngâm non, hạt còn cứng' : 'Ngâm lâu quá, gạo bở', 'bad'); k.notes.push(h < 6 ? 'Gạo ngâm chưa đủ' : 'Gạo ngâm quá lâu'); }
+      if (!out) { good(); burst('Hạt mẩy!'); toast('Gạo nở vừa, hạt mẩy', 'good'); }
+      else { bad(); burst('Ối!', 'bad'); toast((h < 6 ? 'Ngâm non, hạt còn cứng' : 'Ngâm lâu quá, gạo bở') + costText(k.qSoak), 'bad'); note('soak', h < 6 ? 'Gạo ngâm chưa đủ' : 'Gạo ngâm quá lâu'); }
       $('go').disabled = true;
       scoop($('basin'), '#f6efdc', false, () => { k.mix = ['nep']; drawPot(); setTimeout(startMix, 250); });
     };
@@ -1145,7 +1339,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const keys = Object.keys(ING).filter(x => x !== 'nep');
     const need = c.r.need.filter(x => x !== 'nep');
     els.controls.innerHTML = `
-      ${coach(tut(), 'Bước 2 · Trộn nguyên liệu', '<p>Xôi xéo cần nếp nhuộm <em>nghệ</em> và một nhúm <em>muối</em>. Bấm 2 ô có nhãn “Cần” rồi bấm <em>Lên chõ đồ</em>. Cốt dừa, lá dứa là đồ xôi miền Nam.</p>')}
+      ${coach(tut(), 'Bước 2 · Trộn', '<p>Bấm các khay có nhãn <em>Cần</em>, rồi <em>Lên chõ đồ</em>.</p>')}
       ${tut() ? '' : `<p class="hint">Chọn nguyên liệu cho <strong>${c.r.name}</strong>. Bấm lần nữa để bỏ ra.</p>`}
       ${station('Nguyên liệu', keys.filter(x => ING[x].g === 'main').map(x => trayBtn(x, ING[x], tut() && need.includes(x), 'Cần')).join(''))}
       ${station('Gia vị', keys.filter(x => ING[x].g === 'spice').map(x => trayBtn(x, ING[x], tut() && need.includes(x), 'Cần')).join(''))}
@@ -1158,11 +1352,14 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     $('go').onclick = () => {
       const missing = need.filter(x => !k.mix.includes(x));
       const wrong = k.mix.filter(x => !c.r.need.includes(x));
+      if (tut() && (missing.length || wrong.length)) { bad(); toast(missing.length ? `Còn thiếu ${ING[missing[0]].s.toLowerCase()}` : `Bỏ ${ING[wrong[0]].s.toLowerCase()} ra đã`, 'bad'); return; }
+      $('go').disabled = true;
       k.qMix = clamp(1 - missing.length * .34 - wrong.length * .25);
-      missing.forEach(x => k.notes.push(`Thiếu ${ING[x].s.toLowerCase()}`));
-      wrong.forEach(x => k.notes.push(ING[x].decoy || `Không cần cho ${ING[x].s.toLowerCase()} vào ${c.r.name}`));
-      if (!missing.length && !wrong.length) { good(); toast('Trộn chuẩn vị', 'good'); } else { bad(); toast('Hình như chưa đúng công thức', 'bad'); }
-      setTimeout(startSteam, 400);
+      missing.forEach(x => note('mix', `Thiếu ${ING[x].s.toLowerCase()}`));
+      wrong.forEach(x => note('mix', ING[x].decoy || `Không cần ${ING[x].s.toLowerCase()} trong ${c.r.name}`));
+      if (!missing.length && !wrong.length) { good(); burst('Chuẩn vị!'); toast('Trộn chuẩn vị', 'good'); }
+      else { bad(); burst('Sai vị', 'bad'); toast((missing.length ? `Thiếu ${ING[missing[0]].s.toLowerCase()}` : `Không cần ${ING[wrong[0]].s.toLowerCase()}`) + costText(k.qMix), 'bad'); }
+      setTimeout(startSteam, 700);
     };
   }
 
@@ -1170,7 +1367,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const k = S.cook; k.stage = 'steam'; setStep(2); k.done = 0; drawPot();
     const rate = tut() ? .07 : .17 + S.done * .008;
     els.controls.innerHTML = `
-      ${coach(tut(), 'Bước 3 · Đồ xôi', '<ol><li>Kim đi dần từ sống đến chín.</li><li>Kim vào <em>vạch vàng</em>: bấm <em>Xới xôi</em> cho hạt chín đều.</li><li>Kim vào <em>vùng xanh</em>: bấm <em>Bắc chõ</em>. Sang vùng đỏ là khê.</li></ol>')}
+      ${coach(tut(), 'Bước 3 · Đồ xôi', '<p>Vạch vàng: <em>Xới xôi</em>. Vùng xanh: <em>Bắc chõ</em>. Kim sẽ chờ bạn.</p>')}
       ${tut() ? '' : '<p class="hint">Vạch vàng: <strong>Xới xôi</strong>. Vùng xanh: <strong>Bắc chõ</strong>.</p>'}
       <div class="gauge"><div class="fill" id="fill"></div>
         <div class="zn stir" style="left:42%;width:18%"></div><div class="zn" style="left:80%;width:13%"></div><div class="zn warn" style="left:93%;width:7%"></div>
@@ -1181,31 +1378,38 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const needle = $('needle'), fill = $('fill'), st = $('state'), stir = $('stir');
     S.stageTick = (dt) => {
       k.done = Math.min(1.05, k.done + rate * dt);
+      // Tutorial: hold the needle in each zone until the player acts.
+      if (tut()) k.done = Math.min(k.done, k.stirred ? .865 : .51);
       needle.style.left = Math.min(100, k.done * 100) + '%';
       fill.style.width = Math.min(100, k.done * 100) + '%';
       st.textContent = k.done < .42 ? 'Hạt còn sống' : k.done < .6 ? (k.stirred ? 'Đã xới, đồ tiếp' : 'Xới đi!') : k.done < .8 ? 'Sắp chín' : k.done < .93 ? 'Chín dẻo, thơm rồi!' : 'Sắp khê!';
-      if (k.done >= .6 && !k.stirred && !k.stirMissed) { k.stirMissed = true; stir.disabled = true; toast('Quên xới, xôi chín không đều', 'bad'); bad(); }
+      if (k.done >= .6 && !k.stirred && !k.stirMissed) { k.stirMissed = true; stir.disabled = true; toast('Quên xới, xôi sẽ chín không đều', 'bad'); burst('Quên xới!', 'bad'); bad(); }
       drawPot();
       if (k.done >= 1.05) finishSteam();
     };
     stir.onclick = () => {
       stirAnim();
-      if (k.done >= .42 && k.done < .6) { k.stirred = true; stir.disabled = true; good(); toast('Xới tơi, rưới chút nước', 'good'); }
+      if (k.done >= .42 && k.done < .6) { k.stirred = true; stir.disabled = true; good(); burst('Xới tơi!'); toast('Xới tơi, rưới chút nước', 'good'); }
       else { bad(); toast(k.done < .42 ? 'Chưa đến lúc xới' : 'Muộn rồi'); }
     };
-    $('go').onclick = finishSteam;
+    $('go').onclick = () => {
+      if (tut() && k.done < .8) { bad(); toast(k.stirred ? 'Chưa chín, đợi kim vào vùng xanh' : 'Xới xôi trước đã', 'bad'); return; }
+      finishSteam();
+    };
   }
   function finishSteam() {
     const k = S.cook; S.stageTick = null;
     const d = k.done;
     let q = d >= .8 && d <= .93 ? 1 : d < .8 ? clamp(1 - (.8 - d) / .3) : clamp(1 - (d - .93) / .12);
-    if (!k.stirred) { q *= .65; k.notes.push('Chưa xới xôi giữa chừng'); }
+    if (!k.stirred) { q *= .65; note('steam', 'Chưa xới xôi giữa chừng'); }
     k.qSteam = q;
-    if (d < .8) { k.notes.push('Xôi còn sống hạt'); bad(); toast('Xôi chưa chín', 'bad'); }
-    else if (d > .93) { k.notes.push('Xôi bị khê đáy'); bad(); toast('Khét đáy rồi!', 'bad'); }
-    else { good(); toast('Xôi dẻo, bóng hạt', 'good'); }
+    const btns = els.controls.querySelectorAll('.btn'); btns.forEach(b => b.disabled = true);
+    if (d < .8) { note('steam', 'Xôi còn sống hạt'); bad(); burst('Còn sống!', 'bad'); toast('Xôi chưa chín' + costText(q), 'bad'); }
+    else if (d > .93) { note('steam', 'Xôi bị khê đáy'); bad(); burst('Khét!', 'bad'); toast('Khét đáy rồi!' + costText(q), 'bad'); }
+    else if (!k.stirred) { bad(); toast('Chín nhưng không đều vì chưa xới' + costText(q), 'bad'); }
+    else { good(); burst('Dẻo thơm!'); toast('Xôi dẻo, bóng hạt', 'good'); }
     k.stage = 'serve';
-    setTimeout(startServe, 400);
+    setTimeout(startServe, 700);
   }
 
   function startServe() {
@@ -1214,7 +1418,7 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const target = c.r.tops.concat(c.extra ? [c.extra] : []);
     const want = c.r.tops.length ? `Bày phần ăn kèm cho ${c.r.name} đúng thứ tự.` : `${cap(c.r.name)} ăn mộc, chỉ thêm thứ khách dặn.`;
     els.controls.innerHTML = `
-      ${coach(tut(), 'Bước 4 · Bày ra đĩa hoặc gói mang về', '<p>Xôi xéo bày theo thứ tự <em>1. đỗ nắm thái</em>, <em>2. hành phi</em>, <em>3. mỡ hành</em>. Cô Hương <em>ăn tại quán</em>, nên bấm <em>Bày đĩa</em>. Khách mang về thì bấm <em>Gói lá</em>.</p>')}
+      ${coach(tut(), 'Bước 4 · Bày', '<p>Bấm khay theo số <em>1, 2, 3</em>, rồi <em>Bày đĩa</em>. Khách mang về thì <em>Gói lá</em>.</p>')}
       ${tut() ? '' : `<p class="hint">${want} Khách dặn: <strong>${c.extra ? TOP[c.extra].s : 'không thêm gì'}</strong> · <strong>${modeText(c)}</strong>.</p>`}
       ${station('Đồ ăn kèm', keys.map(x => { const i = target.indexOf(x); return trayBtn(x, TOP[x], tut() && i >= 0, i + 1); }).join(''))}
       <div class="row"><button class="btn ghost" id="undo" type="button" style="flex:.6">Gạt lại</button><button class="btn yellow${tut() ? ' pulse' : ''}" id="plate" type="button">Bày đĩa · ăn tại quán</button><button class="btn" id="wrap" type="button">Gói lá · mang về</button></div>`;
@@ -1231,16 +1435,22 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     });
     $('undo').onclick = () => { k.served = []; beep(300); sync(); };
     const done = (form) => {
-      k.form = form;
-      if ((form === 'plate') !== (c.mode === 'here')) k.notes.push(c.mode === 'here' ? 'Khách ăn tại quán, phải bày ra đĩa' : 'Khách mang về, phải gói lá');
       const baseSeq = k.served.filter(x => c.r.tops.includes(x));
       const missing = target.filter(x => !k.served.includes(x));
       const wrong = k.served.filter(x => !target.includes(x));
       const orderOk = baseSeq.join() === c.r.tops.filter(x => baseSeq.includes(x)).join();
-      k.qServe = clamp(1 - missing.length * .3 - wrong.length * .25 - (orderOk ? 0 : .3) - ((form === 'plate') !== (c.mode === 'here') ? .35 : 0));
-      missing.forEach(x => k.notes.push(`Quên ${TOP[x].s.toLowerCase()}`));
-      wrong.forEach(x => k.notes.push(TOP[x].decoy || `Khách không gọi ${TOP[x].s.toLowerCase()}`));
-      if (!orderOk) k.notes.push('Xôi xéo bày: đỗ trước, hành phi, rồi mỡ hành');
+      const formOk = (form === 'plate') === (c.mode === 'here');
+      if (tut() && (missing.length || wrong.length || !orderOk || !formOk)) {
+        bad();
+        toast(!orderOk || wrong.length ? 'Bấm Gạt lại rồi bày theo số 1, 2, 3' : missing.length ? `Còn thiếu ${TOP[missing[0]].s.toLowerCase()}` : 'Cô Hương ăn tại quán, bấm Bày đĩa', 'bad');
+        return;
+      }
+      k.form = form;
+      if (!formOk) note('serve', c.mode === 'here' ? 'Khách ăn tại quán, phải bày ra đĩa' : 'Khách mang về, phải gói lá');
+      k.qServe = clamp(1 - missing.length * .3 - wrong.length * .25 - (orderOk ? 0 : .3) - (formOk ? 0 : .35));
+      missing.forEach(x => note('serve', `Quên ${TOP[x].s.toLowerCase()}`));
+      wrong.forEach(x => note('serve', TOP[x].decoy || `Khách không gọi ${TOP[x].s.toLowerCase()}`));
+      if (!orderOk) note('serve', 'Bày sai thứ tự đỗ, hành phi, mỡ hành');
       finishCook();
     };
     $('plate').onclick = () => done('plate');
@@ -1253,20 +1463,24 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
     const stars = q >= .86 ? 3 : q >= .62 ? 2 : q >= .35 ? 1 : 0;
     const gone = c.state !== 'waiting';
     const pf = c.isTut ? 1 : clamp(c.patience / c.pmax);
-    const pay = gone || !stars ? 0 : Math.round(c.r.price * (.5 + .5 * q));
+    // Each step can take up to 1/8 of the price off; the receipt lists what and why.
+    const STEP = { soak: 'Ngâm gạo', mix: 'Trộn', steam: 'Đồ xôi', serve: 'Bày' };
+    const qs = { soak: k.qSoak, mix: k.qMix, steam: k.qSteam, serve: k.qServe };
+    const cuts = Object.keys(STEP).map(st => ({ why: k.by[st].length ? k.by[st].slice(0, 2).join(', ') + (k.by[st].length > 2 ? ` và ${k.by[st].length - 2} lỗi nữa` : '') : STEP[st] + ' chưa khéo', k: cut(qs[st]) })).filter(x => x.k > 0);
+    const full = c.r.price - cuts.reduce((a, x) => a + x.k, 0);
+    const pay = gone || !stars ? 0 : full;
     const tip = !gone && stars === 3 && pf > .4 ? 5 : 0;
     t.done = true;
     S.tickets = S.tickets.filter(x => x !== t);
-    S.last = { no: t.no, name: c.r.name, who: c.name, stars, notes: k.notes, gone };
+    const southern = k.notes.some(n => n.includes('miền Nam'));
+    S.last = { no: t.no, name: c.r.name, who: c.name, stars, notes: k.notes, gone, price: c.r.price, cuts, pay, tip, fact: southern ? SOUTH : FACTS[c.type] };
     S.cook = null; S.stageTick = null;
     $('kitchen').classList.remove('is-cooking');
     if (!gone) {
-      S.money += pay + tip; S.stars += stars; if (stars) S.served++;
-      els.money.textContent = vnd(S.money);
-      sendBox(c, k.form, t.no, () => deliver(c, stars, pay, tip, k.form));
+      S.stars += stars; if (stars) S.served++;
+      sendBox(c, k.form, t.no, () => deliver(c, stars, pay, tip, k.form, k.notes));
     } else bad();
     if (c.isTut) S.tutStage = 'after';
-    else if (S.tutStage === 'after') S.tutStage = null;
     renderAll();
   }
 
@@ -1318,7 +1532,8 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
       <li>Tài xế công nghệ lấy đơn app, luôn mang về và vội hơn khách thường.</li>
       <li>Thẻ <b>công thức</b> ở góc phải dưới bếp luôn ghi cách làm món đang nấu và đánh dấu những gì bạn đã cho vào.</li>
       <li>Có 2 bàn, 4 ghế. Hết ghế thì khách ăn tại quán đành mang về.</li>
-      <li>3 sao khi khách còn hơn nửa kiên nhẫn sẽ được boa 5.000đ.</li>
+      <li>Mỗi bước làm chưa khéo bị trừ tối đa 1/8 giá món. Hóa đơn dưới bếp ghi rõ trừ gì. 3 sao khi khách còn hơn nửa kiên nhẫn được boa 5.000đ.</li>
+      <li>Ô <b>0/8 khách</b> đếm khách đã xong: đã lấy xôi hoặc đã bỏ đi.</li>
     </ul>`;
 
   $('guideBtn').onclick = () => {
@@ -1398,17 +1613,21 @@ button:focus-visible { outline: 3px solid var(--street); outline-offset: 2px; }
       w.innerHTML = charSVG(p, 'happy'); g.append(w);
     });
     showCard('Quán Xôi Hà Nội', `
-      <p>Bạn vừa nhận quán xôi trên phố Hàng Xôi. Quán chia làm 3 khu, buổi sáng có ${TOTAL} khách ghé.</p>
-      <div class="zones3">
-        <div><b>1 · Gọi món</b>Khách xếp hàng, bạn nhận order.</div>
-        <div><b>2 · Bếp</b>Ngâm, trộn, đồ, bày xôi theo phiếu.</div>
-        <div><b>3 · Lấy xôi</b>Khách lấy xôi, ngồi ăn hoặc mang về.</div>
-      </div>
+      <p>Sáng nay ${TOTAL} khách ghé quán xôi phố Hàng Xôi. Nhận order, nấu xôi, giao cho khách.</p>
       ${best ? `<p>Kỷ lục của quán: <b>${vnd(best)}</b></p>` : ''}
       <button class="btn" type="button" id="learn">Học làm xôi (có hướng dẫn)</button>
       <button class="btn alt" type="button" id="start">Mở hàng luôn</button>`);
     bindIntro();
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden || !S || !raf || S.paused || !els.overlay.hidden) return;
+    S.paused = true;
+    showCard('Quán tạm nghỉ', '<p>Game dừng lại khi bạn rời trang, khách vẫn đứng chờ nguyên chỗ.</p><button class="btn" type="button" id="resume">Bán tiếp</button>');
+    $('resume').onclick = () => { hideCard(); S.paused = false; };
+  });
+  // Keep the tutorial pointer glued to its target while things move.
+  (function follow() { if (ptrEl) placePointer(); requestAnimationFrame(follow); })();
 
   intro();
   spawnVehicle();
